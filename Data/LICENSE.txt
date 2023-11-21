@@ -1,0 +1,69 @@
+Disclaimer
+Halifax Regional Municipality may add, delete, or modify datasets without notice, and may cancel or restrict access to datasets for any reason.
+
+Halifax Regional Municipality is not liable for any direct, indirect, incidental, consequential, special, or other damages, including but not limited to damages for loss of revenue or anticipated profits resulting from your access (or lack of access) to datasets or your use of (or inability to use) datasets.
+
+Licence
+Halifax Regional Municipality open data is released in accordance with the Freedom of Information and Protection of Privacy provisions under Part XX of the Municipal Government Act (Nova Scotia), and may be used in accordance with this Open Government Licence—Halifax.
+
+This licence is based on Version 2.0 of the Open Government Licence—Canada, which was developed through public consultation and a collaborative effort by the federal government and some of the provincial governments. The only substantive changes in this licence are to replace direct references to the Government of Canada with Halifax Regional Municipality, and to reference the laws applicable in Nova Scotia.
+
+Open Government Licence - Halifax
+You are encouraged to use the Information that is available under this licence with only a few conditions.
+
+Using information under this licence
+
+1. Use of any information indicates your acceptance of the terms below.
+
+2. The information provider grants you a worldwide, royalty-free, perpetual, non-exclusive licence to use the Information, including for commercial purposes, subject to the terms below.
+
+You are free to:
+
+3. Copy, modify, publish, translate, adapt, distribute or otherwise use the Information in any medium, mode or format for any lawful purpose.
+
+You must, where you do any of the above:
+
+4. Acknowledge the source of the Information by including any attribution statement specified by the i provider and, where possible, provide a link to this licence.
+
+If the information provider does not provide a specific attribution statement, or if you are using Information from several information providers and multiple attributions are not practical for your product or application, you must use the following attribution statement:
+
+Contains information licenced under the Open Government Licence—Halifax.
+
+5. The terms of this licence are important, and if you fail to comply with any of them, the rights granted to you under this licence, or any similar licence granted by the Information Provider, will end automatically.
+
+Exemptions
+
+6. This licence does not grant you any right to use:
+a) personal information;
+b) information or records not accessible under the Freedom of Information and Protection of Privacy provisions of Part XX of the Municipal Government Act (NS);
+c) third-party rights the information provider is not authorized to licence;
+d) the names, crests, logos, or other official marks of the information provider;
+e) information subject to other intellectual property rights, including patents, trademarks, and official marks.
+
+Non-endorsement
+
+7. This licence does not grant you any right to use the information in a way that suggests any official status or that the Information Provider endorses you or your use of the Information.
+No warranty
+
+8. The information is licenced "as is", and the information provider excludes all representations, warranties, obligations, and liabilities, whether express or implied, to the maximum extent permitted by law.
+
+9. The information provider is not liable for any errors or omissions in the Information, and will not under any circumstances be liable for any direct, indirect, special, incidental, consequential, or other loss, injury or damage caused by its use or otherwise arising in connection with this licence or the Information, even if specifically advised of the possibility of such loss, injury or damage.
+
+Governing law
+
+10. This licence is governed by the laws of the province of Nova Scotia and the applicable laws of Canada.
+
+11. Legal proceedings related to this licence may only be brought in the courts of Nova Scotia.
+
+Definitions
+
+12. In this licence, the terms below have the following meanings:
+"Information" means information resources or records protected by copyright or other information or records that are offered for use under the terms of this licence.
+"Information provider" means Halifax Regional Municipality.
+"Personal information" has the meaning set out in section 461(f) of the Municipal Government Act (NS).
+"Record" has the meaning set out in section 461(h) of the Municipal Government Act (NS).
+"You" means the natural or legal person, or body of persons corporate or incorporate, acquiring rights under this licence.
+
+Versioning
+
+13. This is version 1.0 of the Open Government Licence—Halifax. The information provider may make changes to the terms of this licence from time to time and issue a new version of the licence. Your use of the information will be governed by the terms of the licence in force as of the date you accessed the information.
