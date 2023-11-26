@@ -20,7 +20,7 @@ data2$P_AGE <- as.numeric(data2$P_AGE)
 data2$P_PSN <- as.factor(data2$P_PSN)
 data2$P_USER <- as.factor(data2$P_USER)
 
-
+# Rename the variables using the alias
 names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", 
                             "Confidence", "RoadConfig", "Weather", "RoadSurface", 
                             "RoadAlignment", "Traffic", "VehicleType", 
