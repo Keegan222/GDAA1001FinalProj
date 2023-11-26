@@ -21,3 +21,8 @@ data2$P_PSN <- as.factor(data2$P_PSN)
 data2$P_USER <- as.factor(data2$P_USER)
 
 
+names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", 
+                            "Confidence", "RoadConfig", "Weather", "RoadSurface", 
+                            "RoadAlignment", "Traffic", "VehicleType", 
+                            "VehicleYear", "PersonSex", "PersonAge", 
+                            "PersonPosition", "IncidentSeverity", "UserType")
