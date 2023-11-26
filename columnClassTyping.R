@@ -7,7 +7,7 @@ data2$C_MNTH <- as.factor(data2$C_MNTH)
 data2$C_WDAY <- as.factor(data2$C_WDAY)
 data2$C_HOUR <- as.factor(data2$C_HOUR)
 # C_VEHS stays numeric
-#C_CONF needs grouping
+data2$C_CONF <- as.factor(data2$C_CONF) #C_CONF needs grouping
 data2$C_RCFG <- as.factor(data2$C_RCFG)  # consider grouping
 data2$C_WTHR <- as.factor(data2$C_WTHR) # consider grouping
 data2$C_RSUR <- as.factor(data2$C_RSUR) # consider grouping
