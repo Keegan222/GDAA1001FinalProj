@@ -1,7 +1,8 @@
-library(dpylr)
+library(dplyr)
 library(plyr)
+library(tidyverse)
 
-data <- X2019_dataset_en
+data <- dataset_columns
 
 
 data2 <- data %>%
