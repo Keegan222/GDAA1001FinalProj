@@ -21,8 +21,24 @@ data2$P_PSN <- as.factor(data2$P_PSN)
 data2$P_USER <- as.factor(data2$P_USER)
 
 
+
+
+data_clean <- data2 %>%
+  mutate(numCars = (ifelse(data2$C_CONF <= 10, 'Single Vehicle',
+                           ifelse(data2$C_CONF>20 & data2$C_CONF <30, '2 Vehicles',
+                                  ifelse(data2$C_CONF>30 & data2$C_CONF<40,'2 Vehicles Head On','2 Vehicles Parked')))))
+
+
+
+
+
 names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", 
-                            "Confidence", "RoadConfig", "Weather", "RoadSurface", 
-                            "RoadAlignment", "Traffic", "VehicleType", 
-                            "VehicleYear", "PersonSex", "PersonAge", 
-                            "PersonPosition", "IncidentSeverity", "UserType")
+                  "Confidence", "RoadConfig", "Weather", "RoadSurface", 
+                  "RoadAlignment", "Traffic", "VehicleType", 
+                  "VehicleYear", "PersonSex", "PersonAge", 
+                  "PersonPosition", "IncidentSeverity", "UserType")
+
+
+
+
+  
