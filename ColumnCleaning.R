@@ -19,7 +19,7 @@ data2$C_MNTH <- as.factor(data2$C_MNTH)
 data2$C_WDAY <- as.factor(data2$C_WDAY)
 data2$C_HOUR <- as.factor(data2$C_HOUR)
 # C_VEHS stays numeric
-data2$C_CONF <- as.factor(data2$C_CONF) #C_CONF needs grouping
+# data2$C_CONF <- as.factor(data2$C_CONF) #C_CONF needs grouping
 data2$C_RCFG <- as.factor(data2$C_RCFG)  # consider grouping
 data2$C_WTHR <- as.factor(data2$C_WTHR) # consider grouping
 data2$C_RSUR <- as.factor(data2$C_RSUR) # consider grouping
@@ -36,14 +36,15 @@ data2$numCars <- as.factor(data2$numCars)
 <<<<<<< HEAD
 
 
-
+data2 <- data2 %>%
+  select(-c(C_CONF))
 
 
 
 
 
 names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", 
-                  "Confidence", "RoadConfig", "Weather", "RoadSurface", 
+                   "RoadConfig", "Weather", "RoadSurface", 
                   "RoadAlignment", "Traffic", "VehicleType", 
                   "VehicleYear", "PersonSex", "PersonAge", 
                   "PersonPosition", "IncidentSeverity", "UserType","CollisionType")
@@ -63,7 +64,7 @@ names(data2) <- c("Month", "Weekday", "Hour", "Vehicles",
 
 # Grouping the categorical variables
 grouped_data <- data2 %>%
-  group_by(Month, Weekday, Hour, Vehicles, Confidence, RoadConfig, Weather, RoadSurface, 
+  group_by(Month, Weekday, Hour, Vehicles, RoadConfig, Weather, RoadSurface, 
            RoadAlignment, Traffic, VehicleType, VehicleYear, PersonSex, 
            PersonPosition, IncidentSeverity, UserType)
 
