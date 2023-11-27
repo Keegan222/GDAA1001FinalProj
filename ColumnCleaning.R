@@ -1,4 +1,16 @@
+
+# Group column before converting to factor
+
+data2 <- data2 %>%
+  mutate(numCars = (ifelse(data2$C_CONF <= 10, 'Single Vehicle',
+                           ifelse(data2$C_CONF>20 & data2$C_CONF <30, '2 Vehicles',
+                                  ifelse(data2$C_CONF>30 & data2$C_CONF<40,'2 Vehicles Head On','2 Vehicles Parked')))))
+
+
+
+
 # Convert column types
+
 
 data2$P_ISEV <- as.factor(data2$P_ISEV)   # 3 target factors, no injury, injury, and fatality
 
@@ -19,15 +31,12 @@ data2$P_SEX <- as.factor(data2$P_SEX)
 data2$P_AGE <- as.numeric(data2$P_AGE)
 data2$P_PSN <- as.factor(data2$P_PSN)
 data2$P_USER <- as.factor(data2$P_USER)
+data2$numCars <- as.factor(data2$numCars)
 
 <<<<<<< HEAD
 
 
 
-data_clean <- data2 %>%
-  mutate(numCars = (ifelse(data2$C_CONF <= 10, 'Single Vehicle',
-                           ifelse(data2$C_CONF>20 & data2$C_CONF <30, '2 Vehicles',
-                                  ifelse(data2$C_CONF>30 & data2$C_CONF<40,'2 Vehicles Head On','2 Vehicles Parked')))))
 
 
 
@@ -37,7 +46,7 @@ names(data2) <- c("Month", "Weekday", "Hour", "Vehicles",
                   "Confidence", "RoadConfig", "Weather", "RoadSurface", 
                   "RoadAlignment", "Traffic", "VehicleType", 
                   "VehicleYear", "PersonSex", "PersonAge", 
-                  "PersonPosition", "IncidentSeverity", "UserType")
+                  "PersonPosition", "IncidentSeverity", "UserType","CollisionType")
 
 
 
@@ -55,7 +64,7 @@ names(data2) <- c("Month", "Weekday", "Hour", "Vehicles",
 # Grouping the categorical variables
 grouped_data <- data2 %>%
   group_by(Month, Weekday, Hour, Vehicles, Confidence, RoadConfig, Weather, RoadSurface, 
-           RoadAlignment, Traffic, VehicleType, VehicleYear, PersonSex, PersonAge, 
+           RoadAlignment, Traffic, VehicleType, VehicleYear, PersonSex, 
            PersonPosition, IncidentSeverity, UserType)
 
 
