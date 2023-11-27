@@ -20,6 +20,7 @@ data2$P_AGE <- as.numeric(data2$P_AGE)
 data2$P_PSN <- as.factor(data2$P_PSN)
 data2$P_USER <- as.factor(data2$P_USER)
 
+<<<<<<< HEAD
 
 
 
@@ -42,3 +43,27 @@ names(data2) <- c("Month", "Weekday", "Hour", "Vehicles",
 
 
   
+=======
+# Rename the variables using the alias
+names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", 
+                            "Confidence", "RoadConfig", "Weather", "RoadSurface", 
+                            "RoadAlignment", "Traffic", "VehicleType", 
+                            "VehicleYear", "PersonSex", "PersonAge", 
+                            "PersonPosition", "IncidentSeverity", "UserType")
+
+
+# Grouping the categorical variables
+grouped_data <- data2 %>%
+  group_by(Month, Weekday, Hour, Vehicles, Confidence, RoadConfig, Weather, RoadSurface, 
+           RoadAlignment, Traffic, VehicleType, VehicleYear, PersonSex, PersonAge, 
+           PersonPosition, IncidentSeverity, UserType)
+
+
+# Randomly sample 5000 rows from the grouped data
+sampled_data <- data2 %>%
+  sample_n(5000, replace = FALSE)
+
+# Check the structure of the sampled data
+str(sampled_data)
+
+>>>>>>> 30dd258dd1b5a422ca4b791416270f4e8f4597c7
