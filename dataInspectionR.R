@@ -2,7 +2,7 @@ library(dplyr)
 library(plyr)
 library(tidyverse)
 
-data <- dataset_columns
+data <- good_columns
 
 
 data2 <- data %>%
@@ -14,14 +14,15 @@ data2 <- data %>%
   filter(C_RCFG!="QQ",C_RCFG!="UU",C_RCFG!="XX") %>% 
   filter(C_WTHR!="U",C_WTHR!="X",C_WTHR!="Q") %>% 
   filter(C_RSUR!="U",C_RSUR!="X",C_RSUR!="Q") %>%
-  filter(C_RALN!="U",C_RALN!="X") %>%
+  filter(C_RALN!="U",C_RALN!="X",C_RALN!="Q") %>%
   filter(C_TRAF!="QQ",C_TRAF!="UU",C_TRAF!="XX") %>%
   filter(V_TYPE!="NN",V_TYPE!="QQ",V_TYPE!="UU",V_TYPE!="XX") %>%
   filter(V_YEAR!="NNNN",V_YEAR!="UUUU",V_YEAR!="XXXX") %>%
   filter(P_SEX!="N",P_SEX!="U",P_SEX!="X") %>%
   filter(P_AGE!="NN",P_AGE!="UU",P_AGE!="XX") %>%
   filter(P_PSN!="NN",P_PSN!="QQ",P_PSN!="UU",P_PSN!="XX") %>%
-  filter(P_USER!="U")
+  filter(P_USER!="U") %>%
+  filter(P_ISEV!="N",P_ISEV!="U")
 
 
 count(data2$C_MNTH)
