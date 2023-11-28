@@ -1,0 +1,86 @@
+---
+title: "Determining Risk Factors for Injuries and Fatalities in Road Collisions"
+authors: "Reuben Walker, Keegan MacDonald, Sanita Richards & Corey Thorne"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Introduction
+The Canadian National Collision Database contains information on all
+police-reported motor vehicle collisions over many years. The attached dataset
+"2019_dataset_en.csv" contains such information for 272301 collisions in the
+year 2019.
+
+This R Notebook will load this dataset, clean, inspect and visualize its
+contents, and produce a machine learning model to predict the severity of a
+collision (whether it resulted in no injuries, non-fatal, or fatal injuries)
+given a subset of the other available information.
+
+## Loading libraries
+The following libraries will be required to run this R Notebook:
+
+```{r}
+library(readr)
+library(dplyr)
+library(plyr)
+library(tidyverse)
+library(RColorBrewer)
+library(GGally)
+library(data.table)
+library(sf)
+library(ggspatial)
+library(tmap)
+library(grid)
+library(gridExtra)
+```
+
+## Loading the dataset
+The dataset will be loaded as a CSV into the active R environment, it must be
+located in the same directory as this R Notebook:
+
+```{r}
+data <- read_csv("2019_dataset_en.csv", show_col_types = FALSE)
+```
+
+## Cleaning the data
+To clean the data, six columns containing unique identifiers, the year (2019),
+and other variables not relevant or inhibitory to this machine learning task
+must be removed as follows:
+
+```{r}
+data <- data %>%
+  select(-c(C_YEAR, C_SEV, V_ID, P_ID, P_SAFE, C_CASE))
+```
+
+For the meanings of these column names, refer to the attached
+"data_dictionary.pdf" for details.
+
+The remaining columns are almost exclusively categorical variables, and contain
+categories for unknown and missing data. These must be removed for the machine
+learning model to process the dataset.
+
+```{r}
+data <- data %>%
+  filter(C_MNTH!="UU",C_MNTH!="XX") %>%
+  filter(C_WDAY!="U") %>% 
+  filter(C_HOUR!="UU") %>%
+  filter(C_VEHS!="UU",C_VEHS!="XX") %>%
+  filter(C_CONF!="QQ",C_CONF!="UU",C_CONF!="XX") %>%
+  filter(C_RCFG!="QQ",C_RCFG!="UU",C_RCFG!="XX") %>% 
+  filter(C_WTHR!="U",C_WTHR!="X",C_WTHR!="Q") %>% 
+  filter(C_RSUR!="U",C_RSUR!="X",C_RSUR!="Q") %>%
+  filter(C_RALN!="U",C_RALN!="X",C_RALN!="Q") %>%
+  filter(C_TRAF!="QQ",C_TRAF!="UU",C_TRAF!="XX") %>%
+  filter(V_TYPE!="NN",V_TYPE!="QQ",V_TYPE!="UU",V_TYPE!="XX") %>%
+  filter(V_YEAR!="NNNN",V_YEAR!="UUUU",V_YEAR!="XXXX") %>%
+  filter(P_SEX!="N",P_SEX!="U",P_SEX!="X") %>%
+  filter(P_AGE!="NN",P_AGE!="UU",P_AGE!="XX") %>%
+  filter(P_PSN!="NN",P_PSN!="QQ",P_PSN!="UU",P_PSN!="XX") %>%
+  filter(P_USER!="U") %>%
+  filter(P_ISEV!="N",P_ISEV!="U")
+```
+
+Removing these leaves 17 of the original 23 columns and 167803 of the original
+272301 observations. Finally, the remaining data must be converted to
+factors / categorical variables
