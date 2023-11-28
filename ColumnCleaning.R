@@ -31,8 +31,8 @@ data2$numCars <- as.factor(data2$numCars)
 #<<<<<<< HEAD
 
 
-#data2 <- data2 %>%
-#  select(-c(C_CONF))
+data2 <- data2 %>%
+  select(-c(C_CONF))
 
 #Assign names for Injury Severity
 data2 <- data2 %>% 
@@ -79,8 +79,130 @@ data2 <- data2 %>%
                          "6" = "Visibility limitation",
                          "7" = "Strong wind"))
 
+# Assign names for road config
+data2 <- data2 %>% 
+  mutate(C_RCFG = recode(C_RCFG,
+                         "1" = "Non-Intersection",
+                         "2" = "Intersection - 2 public roadways",
+                         "3" = "Intersection - parking, driveway etc.",
+                         "4" = "Railroad level crossing",
+                         "5" = "Bridge, overpass, viaduct",
+                         "6" = "Tunnel or underpass",
+                         "7" = "Passing or climbing lane",
+                         "8" = "Ramp",
+                         "9" = "Traffic circle",
+                         "10" = "Express lane of a freeway",
+                         "11" = "Collector lane of a freeway",
+                         "12" = "Transfer lane of a freeway"))
 
-names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", "CollisionConfig", 
+# Assign names for road surfaces
+
+data2 <- data2 %>% 
+  mutate(C_RSUR = recode(C_RSUR,
+                         "1" = "Dry, normal",
+                         "2" = "Wet",
+                         "3" = "Snow",
+                         "4" = "Slush, wet snow",
+                         "5" = "Icy",
+                         "6" = "Sand/gravel/dirt",
+                         "7" = "Muddy",
+                         "8" = "Oil",
+                         "9" = "Flooded"))
+
+# Assign names for road alignment
+
+data2 <- data2 %>% 
+  mutate(C_RALN = recode(C_RALN,
+                         "1" = "Straight and level",
+                         "2" = "Straight with gradient",
+                         "3" = "Curved and level",
+                         "4" = "Curved with gradient",
+                         "5" = "Top of hill or gradient",
+                         "6" = "bottom of hill or gradient"))
+
+# assign names for traffic config
+
+data2 <- data2 %>% 
+  mutate(C_TRAF = recode(C_TRAF,
+                         "1" = "Traffic signals fully operational",
+                         "2" = "Traffic signals in flashing mode",
+                         "3" = "Stop sign",
+                         "4" = "Yield sign",
+                         "5" = "Warning sign",
+                         "6" = "Pedestrian crosswalk",
+                         "7" = "Police officer",
+                         "8" = "School guard, flagman",
+                         "9" = "School crossing",
+                         "10" = "Reduced speed zone",
+                         "11" = "No passing zone sign",
+                         "12" = "Marking on the road",
+                         "13" = "School bus - signal lights flashing",
+                         "14" = "School bus - signal lights not flashing",
+                         "15" = "Railway crossing with signals, gates",
+                         "16" = "Railway crossing with signs only",
+                         "17" = "Control device not specified",
+                         "18" = "No control present"))
+
+# assign names for vehicle types
+
+data2 <- data2 %>% 
+  mutate(V_TYPE = recode(V_TYPE,
+                         "1" = "Light duty vehicle",
+                         "5" = "Panel/cargo van",
+                         "6" = "Other trucks and vans",
+                         "7" = "Unit trucks > 4536 kg",
+                         "8" = "Road tractor",
+                         "9" = "School bus",
+                         "10" = "Smaller school bus",
+                         "11" = "Urban and intercity bus",
+                         "14" = "Motorcycle and moped",
+                         "16" = "Off road vehicles",
+                         "17" = "Bicycle",
+                         "18" = "Purpose-built motorhome",
+                         "19" = "Farm equipment",
+                         "20" = "Construction equipment",
+                         "21" = "Fire engine",
+                         "22" = "Snowmobile",
+                         "23" = "Streetcar"))
+
+
+# assign names for person position
+
+data2 <- data2 %>% 
+  mutate(P_PSN = recode(P_PSN,
+                        "11" = "Driver",
+                        "12" = "Front row, center",
+                        "13" = "Front row, right outboard",
+                        "21" = "Second row, left outboard",
+                        "22" = "Second row, center",
+                        "23" = "Second Row, right outboard",
+                        "31" = "Third row, left outboard",
+                        "32" = "Third row, center",
+                        "33" = "Third row, right outboard",
+                        "96" = "Position unknown, but on-board",
+                        "97" = "Sitting on someone's lap",
+                        "98" = "Outside passenger compartment",
+                        "99" = "Pedestrian"))
+
+
+
+# assign names for person user
+
+data2 <- data2 %>% 
+  mutate(P_USER = recode(P_USER,
+                         "1" = "Motor vehicle driver",
+                         "2" = "Motor vehicle passenger",
+                         "3" = "Pedestrian",
+                         "4" = "Bicyclist",
+                         "5" = "Motorcyclist"))
+
+
+
+
+
+
+
+names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", 
                    "RoadConfig", "Weather", "RoadSurface", 
                   "RoadAlignment", "Traffic", "VehicleType", 
                   "VehicleYear", "PersonSex", "PersonAge", 
@@ -92,11 +214,10 @@ names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", "CollisionConfig",
   
 #=======
 # Rename the variables using the alias
-names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", 
-                            "CollisionConfig", "RoadConfig", "Weather", "RoadSurface", 
+names(data2) <- c("Month", "Weekday", "Hour", "Vehicles", "RoadConfig", "Weather", "RoadSurface", 
                             "RoadAlignment", "Traffic", "VehicleType", 
                             "VehicleYear", "PersonSex", "PersonAge", 
-                            "PersonPosition", "InjurySeverity", "UserType")
+                            "PersonPosition", "InjurySeverity", "UserType", "collisionType")
 
 # Grouping the categorical variables
 grouped_data <- data2 %>%
