@@ -1,0 +1,203 @@
+---
+title: "Determining Risk Factors for Injuries and Fatalities in Road Collisions"
+authors: "Reuben Walker, Keegan MacDonald, Sanita Richards & Corey Thorne"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Introduction
+The Canadian National Collision Database contains information on all
+police-reported motor vehicle collisions over many years. The attached dataset
+"2019_dataset_en.csv" contains such information for 272301 collisions in the
+year 2019.
+
+This R Notebook will load this dataset, clean, inspect and visualize its
+contents, and produce a machine learning model to predict the severity of a
+collision (whether it resulted in no injuries, non-fatal, or fatal injuries)
+given a subset of the other available information.
+
+## Loading libraries
+The following libraries will be required to run this R Notebook:
+
+```{r}
+library(readr)
+library(dplyr)
+library(plyr)
+library(tidyverse)
+library(RColorBrewer)
+library(GGally)
+library(data.table)
+library(sf)
+library(ggspatial)
+library(tmap)
+library(grid)
+library(gridExtra)
+```
+
+## Loading the dataset
+The dataset will be loaded as a CSV into the active R environment, it must be
+located in the same directory as this R Notebook:
+
+```{r}
+data <- read_csv("2019_dataset_en.csv", show_col_types = FALSE)
+```
+
+## Cleaning the data
+To clean the data, six columns containing unique identifiers, the year (2019),
+and other variables not relevant or inhibitory to this machine learning task
+must be removed as follows:
+
+```{r}
+data <- data %>%
+  select(-c(C_YEAR, C_SEV, V_ID, P_ID, P_SAFE, C_CASE))
+```
+
+For the meanings of these column names, refer to the attached
+"data_dictionary.pdf" for details.
+
+The remaining columns are almost exclusively categorical variables, and contain
+categories for unknown and missing data. These must be removed for the machine
+learning model to process the dataset.
+
+```{r}
+data <- data %>%
+  filter(C_MNTH!="UU",C_MNTH!="XX") %>%
+  filter(C_WDAY!="U") %>% 
+  filter(C_HOUR!="UU") %>%
+  filter(C_VEHS!="UU",C_VEHS!="XX") %>%
+  filter(C_CONF!="QQ",C_CONF!="UU",C_CONF!="XX") %>%
+  filter(C_RCFG!="QQ",C_RCFG!="UU",C_RCFG!="XX") %>% 
+  filter(C_WTHR!="U",C_WTHR!="X",C_WTHR!="Q") %>% 
+  filter(C_RSUR!="U",C_RSUR!="X",C_RSUR!="Q") %>%
+  filter(C_RALN!="U",C_RALN!="X",C_RALN!="Q") %>%
+  filter(C_TRAF!="QQ",C_TRAF!="UU",C_TRAF!="XX") %>%
+  filter(V_TYPE!="NN",V_TYPE!="QQ",V_TYPE!="UU",V_TYPE!="XX") %>%
+  filter(V_YEAR!="NNNN",V_YEAR!="UUUU",V_YEAR!="XXXX") %>%
+  filter(P_SEX!="N",P_SEX!="U",P_SEX!="X") %>%
+  filter(P_AGE!="NN",P_AGE!="UU",P_AGE!="XX") %>%
+  filter(P_PSN!="NN",P_PSN!="QQ",P_PSN!="UU",P_PSN!="XX") %>%
+  filter(P_USER!="U") %>%
+  filter(P_ISEV!="N",P_ISEV!="U")
+```
+
+Removing these leaves 17 of the original 23 columns and 167803 of the original
+272301 observations. Finally, the most of remaining data must be converted to
+factors / categorical variables, and some variables will be grouped into fewer
+categories than they began with.
+
+```{r}
+# Group the C_CONF column while naming categories.
+data <- data %>%
+  mutate(C_CONF = (ifelse(data$C_CONF <= 10, 'Single Vehicle',
+                    ifelse(data$C_CONF>20 & data$C_CONF <30, '2 Vehicles',
+                    ifelse(data$C_CONF>30 & data$C_CONF<40,'2 Vehicles Head On','2 Vehicles Parked')))))
+
+# Convert most variables to factors and some to numeric.
+data$C_MNTH <- as.factor(data$C_MNTH)
+data$C_WDAY <- as.factor(data$C_WDAY)
+data$C_HOUR <- as.numeric(data$C_HOUR)
+data$C_VEHS <- as.numeric(data$C_VEHS)
+data$C_CONF <- as.factor(data$C_CONF)
+data$C_RCFG <- as.factor(data$C_RCFG)
+data$C_WTHR <- as.factor(data$C_WTHR)
+data$C_RSUR <- as.factor(data$C_RSUR)
+data$C_RALN <- as.factor(data$C_RALN)
+data$C_TRAF <- as.factor(data$C_TRAF)
+data$V_TYPE <- as.factor(data$V_TYPE)
+data$V_YEAR <- as.numeric(data$V_YEAR)
+data$P_SEX <- as.factor(data$P_SEX)
+data$P_AGE <- as.numeric(data$P_AGE)
+data$P_PSN <- as.factor(data$P_PSN)
+data$P_ISEV <- as.factor(data$P_ISEV)
+data$P_USER <- as.factor(data$P_USER)
+```
+
+To improve the readability of the data for the remainder of this script, the
+values of categorical variables and the columns will be assigned English names:
+
+```{r}
+# Assign names to values of categorical variables.
+data <- data %>%
+  mutate(C_MNTH = recode(C_MNTH,
+                        "1" = "Jan", "2" = "Feb", "3" = "Mar", "4" = "Apr",
+                        "5" = "May", "6" = "Jun", "7" = "Jul", "8" = "Aug",
+                        "9" = "Sep", "10" = "Oct", "11" = "Nov", "12" = "Dec")) %>%
+  mutate(C_WDAY = recode(C_WDAY,
+                        "1" = "Mon", "2" = "Tue", "3" = "Wed", "4" = "Thu",
+                        "5" = "Fri", "6" = "Sat", "7" = "Sun")) %>%
+  mutate(C_RCFG = recode(C_RCFG,
+                         "1" = "Non-Intersection",
+                         "2" = "Intersection - 2 public roadways",
+                         "3" = "Intersection - parking, driveway etc.",
+                         "4" = "Railroad level crossing",
+                         "5" = "Bridge, overpass, viaduct",
+                         "6" = "Tunnel or underpass",
+                         "7" = "Passing or climbing lane",
+                         "8" = "Ramp",
+                         "9" = "Traffic circle",
+                         "10" = "Express lane of a freeway",
+                         "11" = "Collector lane of a freeway",
+                         "12" = "Transfer lane of a freeway")) %>%
+  mutate(C_WTHR = recode(C_WTHR,
+                         "1" = "Clear & sunny", "2" = "Cloudy, no precipitation",
+                         "3" = "Raining", "4" = "Snowing",
+                         "5" = "Freezing rain, sleet, hail",
+                         "6" = "Visibility limitation", "7" = "Strong wind")) %>%
+  mutate(C_RSUR = recode(C_RSUR,
+                         "1" = "Dry, normal", "2" = "Wet", "3" = "Snow",
+                         "4" = "Slush, wet snow", "5" = "Icy", "6" = "Sand/gravel/dirt",
+                         "7" = "Muddy", "8" = "Oil", "9" = "Flooded")) %>%
+  mutate(C_RALN = recode(C_RALN,
+                         "1" = "Straight and level", "2" = "Straight with gradient",
+                         "3" = "Curved and level", "4" = "Curved with gradient",
+                         "5" = "Top of hill or gradient", "6" = "bottom of hill or gradient")) %>%
+  mutate(C_TRAF = recode(C_TRAF,
+                         "1" = "Traffic signals fully operational",
+                         "2" = "Traffic signals in flashing mode", "3" = "Stop sign",
+                         "4" = "Yield sign", "5" = "Warning sign",
+                         "6" = "Pedestrian crosswalk", "7" = "Police officer",
+                         "8" = "School guard, flagman", "9" = "School crossing",
+                         "10" = "Reduced speed zone", "11" = "No passing zone sign",
+                         "12" = "Marking on the road",
+                         "13" = "School bus - signal lights flashing",
+                         "14" = "School bus - signal lights not flashing",
+                         "15" = "Railway crossing with signals, gates",
+                         "16" = "Railway crossing with signs only",
+                         "17" = "Control device not specified",
+                         "18" = "No control present")) %>%
+  mutate(V_TYPE = recode(V_TYPE,
+                         "1" = "Light duty vehicle", "5" = "Panel/cargo van",
+                         "6" = "Other trucks and vans", "7" = "Unit trucks > 4536 kg",
+                         "8" = "Road tractor", "9" = "School bus",
+                         "10" = "Smaller school bus", "11" = "Urban and intercity bus",
+                         "14" = "Motorcycle and moped", "16" = "Off road vehicles",
+                         "17" = "Bicycle", "18" = "Purpose-built motorhome",
+                         "19" = "Farm equipment", "20" = "Construction equipment",
+                         "21" = "Fire engine", "22" = "Snowmobile", "23" = "Streetcar")) %>%
+  mutate(P_PSN = recode(P_PSN,
+                        "11" = "Driver", "12" = "Front row, center",
+                        "13" = "Front row, right outboard", "21" = "Second row, left outboard",
+                        "22" = "Second row, center", "23" = "Second Row, right outboard",
+                        "31" = "Third row, left outboard", "32" = "Third row, center",
+                        "33" = "Third row, right outboard", "96" = "Position unknown, but on-board",
+                        "97" = "Sitting on someone's lap", "98" = "Outside passenger compartment",
+                        "99" = "Pedestrian")) %>%
+  mutate(P_ISEV = recode(P_ISEV,
+                         "1" = "No injury", "2" = "Injury", "3" = "Fatality")) %>%
+  mutate(P_USER = recode(P_USER,
+                         "1" = "Motor vehicle driver", "2" = "Motor vehicle passenger",
+                         "3" = "Pedestrian", "4" = "Bicyclist", "5" = "Motorcyclist"))
+# Assign column names.
+names(data) <- c("Month", "Weekday", "Hour", "Vehicles", "CollisionType", 
+                   "RoadConfig", "Weather", "RoadSurface", 
+                  "RoadAlignment", "Traffic", "VehicleType", 
+                  "VehicleYear", "PersonSex", "PersonAge", 
+                  "PersonPosition", "InjurySeverity", "UserType")
+```
+
+With these modifications, the data is mostly prepared for machine learning tasks,
+and must now be visualized to show any more subtle problems that may appear
+during training of a model.
+
+## Data visualization
