@@ -195,3 +195,9 @@ names(data) <- c("Month", "Weekday", "Hour", "Vehicles", "CollisionType",
                   "VehicleYear", "PersonSex", "PersonAge", 
                   "PersonPosition", "InjurySeverity", "UserType")
 ```
+
+With these modifications, the data is mostly prepared for machine learning tasks,
+and must now be visualized to show any more subtle problems that may appear
+during training of a model.
+
+## Data visualization
