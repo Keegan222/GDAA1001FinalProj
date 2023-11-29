@@ -411,4 +411,30 @@ collisionHistsFatal <- collisionTypeHistFatal + numVehiclesHistFatal & theme(leg
 ```
 
 
+The data is distributed in such a way that the majority of the results of the target variable 
+InjurySeverity are either No injury or Injury. No injury makes up (76530)/167803 or 45.6% of cases, 
+Injury makes up (90299)/167807 or 53.8% leaving only 974/167807 or 0.5% resulting in fatalities.  
+Fortunately, given the size of the data, we can acquire 3 suitably equal sized samples of the data 
+for training and testing purposes.
+
+
+```{r}
+fatalSet <- data %>%
+  filter(InjurySeverity == "Fatality") %>%
+  sample_n(900)
+
+injurySet <- data %>%
+  filter(InjurySeverity == "Injury") %>%
+  sample_n(900)
+
+noInjurySet <- data %>%
+  filter(InjurySeverity == "No injury") %>%
+  sample_n((900))
+
+data <- bind_rows(fatalSet,injurySet,noInjurySet, .id = NULL)
+
+```
+
+
+
 
