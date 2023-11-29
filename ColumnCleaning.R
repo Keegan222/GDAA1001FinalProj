@@ -225,10 +225,30 @@ grouped_data <- data2 %>%
            RoadAlignment, Traffic, VehicleType, VehicleYear, PersonSex, 
            PersonPosition, InjurySeverity, UserType)
 
+# Create 3 equally sized subsets of our data containing the 3 factors of our target variable
+
+
+fatalSet <- data2 %>%
+  filter(InjurySeverity == "Fatality") %>%
+  sample_n(900)
+
+injurySet <- data2 %>%
+  filter(InjurySeverity == "Injury") %>%
+  sample_n(900)
+
+noInjurySet <- data2 %>%
+  filter(InjurySeverity == "No injury") %>%
+  sample_n((900))
+
+# Bind the three sets together to create the sampled data set
+
+sampled_data <- bind_rows(fatalSet,injurySet,noInjurySet, .id = NULL)
+
+
 
 # Randomly sample 5000 rows from the grouped data
-sampled_data <- data2 %>%
-  sample_n(5000, replace = FALSE)
+#sampled_data <- data2 %>%
+#  sample_n(5000, replace = FALSE)
 
 # Check the structure of the sampled data
 str(sampled_data)
