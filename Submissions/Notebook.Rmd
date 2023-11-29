@@ -33,6 +33,7 @@ library(ggspatial)
 library(tmap)
 library(grid)
 library(gridExtra)
+library(patchwork)
 ```
 
 ## Loading the dataset
@@ -194,6 +195,7 @@ names(data) <- c("Month", "Weekday", "Hour", "Vehicles", "CollisionType",
                   "RoadAlignment", "Traffic", "VehicleType", 
                   "VehicleYear", "PersonSex", "PersonAge", 
                   "PersonPosition", "InjurySeverity", "UserType")
+
 ```
 
 With these modifications, the data is mostly prepared for machine learning tasks,
@@ -201,3 +203,212 @@ and must now be visualized to show any more subtle problems that may appear
 during training of a model.
 
 ## Data visualization
+```{r}
+# Set up histogram colors for histograms
+InjurySeverity.colors <- c('Fatality' = 'brown1', 'Injury' = 'darkgoldenrod1', 'No injury' = 'darkseagreen4')
+
+# This bit of code ensures that months display in the proper order on the bar charts
+data$Month <- factor(data$Month, levels=c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'))
+
+#Create initial histograms for EDA:
+
+#Month
+monthHist <- ggplot(data, aes(x=Month,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+monthHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Month,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Weekday
+weekdayHist <- ggplot(data, aes(x=Weekday,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+weekdayHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Weekday,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Hour
+hourHist <- ggplot(data, aes(x=Hour,fill=InjurySeverity))+
+  geom_bar(bins=24)+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+hourHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Hour,fill=InjurySeverity))+
+  geom_bar(bins=24)+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Number of vehicles involved
+numVehiclesHist <- ggplot(data, aes(x=Vehicles,fill=InjurySeverity))+
+  geom_bar(bins=24)+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+numVehiclesHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Vehicles,fill=InjurySeverity))+
+  geom_bar(bins=24)+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#RoadConfig
+roadConfigHist <- ggplot(data, aes(x=RoadConfig,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+roadConfigHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadConfig,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Weather
+weatherHist <- ggplot(data, aes(x=Weather,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+weatherHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Weather,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#RoadSurface
+roadSurfaceHist <- ggplot(data, aes(x=RoadSurface,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+roadSurfaceHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadSurface,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#RoadAlignment
+roadAlignmentHist <- ggplot(data, aes(x=RoadAlignment,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+roadAlignmentHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadAlignment,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Traffic
+trafficHist <- ggplot(data, aes(x=Traffic,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+trafficHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Traffic,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#VehicleType
+vehTypeHist <- ggplot(data, aes(x=VehicleType,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+vehTypeHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=VehicleType,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#VehicleYear
+vehYearHist <- ggplot(data, aes(x=VehicleYear,fill=InjurySeverity))+
+  geom_bar(bins=100)+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+vehYearHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=VehicleYear,fill=InjurySeverity))+
+  geom_bar(bins=100)+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#PersonSex
+sexHist <- ggplot(data, aes(x=PersonSex,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+sexHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=PersonSex,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#PersonAge
+ageHist <- ggplot(data, aes(x=PersonAge,fill=InjurySeverity))+
+  geom_bar(bins=99)+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+ageHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=PersonAge,fill=InjurySeverity))+
+  geom_bar(bins=96)+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#PersonPosition
+pPositionHist <- ggplot(data, aes(x=PersonPosition,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+pPositionHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=PersonPosition,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#UserType
+pUserTypeHist <- ggplot(data, aes(x=UserType,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+pUserTypeHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=UserType,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#collisionType
+collisionTypeHist <- ggplot(data, aes(x=CollisionType,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+collisionTypeHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=CollisionType,fill=InjurySeverity))+
+  geom_bar(stat="count")+
+  scale_fill_manual(values=InjurySeverity.colors)
+```
+
+First, we create bar charts to see how many collisions of each severity there are according to each variable. Most of the variables are either categorical, or integer numbers so bar charts are the best option.
+
+Bar charts are displayed grouped by theme:
+
+ - Time
+ - Demographics
+ - Weather & road conditions
+ - Vehicle info
+ - Road info
+ - Driver/passenger info
+ - Collision info
+ 
+ Note that for all variables, the amount of fatalities is drastically lower than the amount of injuries and non-injuries, to the point where it's impossible to view patterns in the data. Therefore, for each varaible there is a separate chart to show how fatalities correlate with each variable.
+
+```{r, out.width="100%"}
+#Display similar grouped histograms:
+
+#Histograms for time/day/month
+timeHists <- (monthHist|weekdayHist|hourHist) & theme(legend.position = "right")
+timeHistsFatal <- (monthHistFatal|weekdayHistFatal|hourHistFatal) & theme(legend.position = "none")
+(timeHists/timeHistsFatal) + plot_layout(guides = "collect")
+
+#Histograms for demographics
+demoHists <- sexHist + ageHist & theme(legend.position = "right")
+demoHistsFatal <- sexHistFatal + ageHistFatal & theme(legend.position = "none")
+(demoHists/demoHistsFatal) + plot_layout(guides = "collect")
+
+#Histograms for road & weather conditions
+weatherRoadCondHists <- weatherHist + roadSurfaceHist & theme(legend.position = "right")
+weatherRoadCondHistsFatal <- weatherHistFatal + roadSurfaceHistFatal & theme(legend.position = "none")
+(weatherRoadCondHists/weatherRoadCondHistsFatal) + plot_layout(guides = "collect")
+
+#Histograms for vehicle info
+vehicleInfoHists <- vehTypeHist + vehYearHist & theme(legend.position = "right")
+vehicleInfoHistsFatal <- vehTypeHistFatal + vehYearHistFatal & theme(legend.position = "none")
+(vehicleInfoHists/vehicleInfoHistsFatal) + plot_layout(guides = "collect")
+
+#Histograms for road info
+roadInfoHists <- roadAlignmentHist + trafficHist + roadConfigHist & theme(legend.position = "right")
+roadInfoHistsFatal <- roadAlignmentHistFatal + trafficHistFatal + roadConfigHistFatal & theme(legend.position = "none")
+(roadInfoHists/roadInfoHistsFatal) + plot_layout(guides = "collect")
+
+#Histograms for driver/passenger info
+driverPassengerHists <- pPositionHist + pUserTypeHist & theme(legend.position = "right")
+driverPassengerHistsFatal <- pPositionHistFatal + pUserTypeHistFatal & theme(legend.position = "none")
+(driverPassengerHists/driverPassengerHistsFatal) + plot_layout(guides = "collect")
+
+#Histograms for collision info
+collisionHists <- collisionTypeHist + numVehiclesHist & theme(legend.position = "right")
+collisionHistsFatal <- collisionTypeHistFatal + numVehiclesHistFatal & theme(legend.position = "none")
+(collisionHists/collisionHistsFatal) + plot_layout(guides = "collect")
+```
+
+
+
