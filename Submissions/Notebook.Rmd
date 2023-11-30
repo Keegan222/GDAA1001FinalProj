@@ -202,46 +202,164 @@ With these modifications, the data is mostly prepared for machine learning tasks
 and must now be visualized to show any more subtle problems that may appear
 during training of a model.
 
-## Data visualization
-```{r}
+## Exploratory Data Analysis & Visualization
+First of all, getting a count of each level of injury severity reveals that the amount of collisions resulting in no injury or an injury vastly outweighs the amount of fatalities. This has implications for how we should display the data: when all 3 variables are displayed in the same graph, the fatalities are dwarfed by the no-injury and injury entries to the point where it becomes impossible to examine trends in fatalities. Therefore, we found it useful in most situations to create separate plots for fatalities in order to properly visualize them.
+```{r, warning=FALSE, echo=FALSE}
+summary(data$InjurySeverity)
+```
+
+### Month, weekday, and hour
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
 # Set up histogram colors for histograms
 InjurySeverity.colors <- c('Fatality' = 'brown1', 'Injury' = 'darkgoldenrod1', 'No injury' = 'darkseagreen4')
 
 # This bit of code ensures that months display in the proper order on the bar charts
 data$Month <- factor(data$Month, levels=c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'))
 
-#Create initial histograms for EDA:
+#Create counts for the Month and Weekday Varaibles
+Count_Month <- count(data, vars = c('Month','InjurySeverity'))
+Count_Weekday <- count(data, vars = c('Weekday','InjurySeverity'))
 
-#Month
-monthHist <- ggplot(data, aes(x=Month,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+#Month line graph
+monthLine <- ggplot(Count_Month, aes(x=Month,y=freq,group=InjurySeverity,color=InjurySeverity))+
+  geom_line()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Month line graph (fatalities only)
+monthLineFatal <- ggplot(Count_Month %>% filter(InjurySeverity == "Fatality"), aes(x=Month,y=freq,group=InjurySeverity,color=InjurySeverity))+
+  geom_line()+
+  theme(legend.position = "none")+
+  ylim(0,180)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Weekday line graph
+weekdayLine <- ggplot(Count_Weekday, aes(x=Weekday,y=freq,group=InjurySeverity,color=InjurySeverity))+
+  geom_line()+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Weekday line graph (fatalities only)
+weekdayLineFatal <- ggplot(Count_Weekday %>% filter(InjurySeverity == "Fatality"), aes(x=Weekday,y=freq,group=InjurySeverity,color=InjurySeverity))+
+  geom_line()+
+  theme(legend.position = "none")+
+  ylim(0,180)+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Hour density plot
+hourDensity <- ggplot(data, aes(x=Hour,color=InjurySeverity))+
+  geom_density()+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Display plots for day & month
+monthPlots <- (monthLine|monthLineFatal)
+weekdayPlots <- (weekdayLine|weekdayLineFatal)
+(monthPlots/weekdayPlots) + plot_layout(guides = "collect")
+
+#Display hour density plot
+hourDensity
+```
+With these graphs, we can see that collisions of all types follow the same general trends over the course of the year & course of each week. The shape of the lines for No Injury and Injury are nearly the same in both graphs. Here are some trends of note:
+
+ - More collisions in summer months, peaking in June
+ - Less collisions in winter months, bottoming out in April
+ - Collisions dip in September, then rise again in October before resuming the downwards trend
+ 
+Fatalities follow the same general pattern, but note that there seems to be a consistent low level of fatalities from Jan-Apr, whereas for other types of collisions the number starts higher and then decreases.
+
+Over the course of a week, overall collisions: 
+
+ - Increase over the week, peaking on Friday. 
+ - Decrease sharply over the weekend
+ 
+The decrease over the weekend is likely due to reduced commuting levels. Fatalities follow the same general pattern, but are slightly higher on Mondays & Tuesdays, with the lowest amount of fatalities on Wednesday.
+
+The density plot of collisions over the course of the day shows that collisions are likely correlated by overall commuting patterns. Here are some observations:
+
+ - Overall collisions have a small spike at about 7am (hour 7)
+ - Larger spike after about 3pm (hour 15)
+ - Collisions are lowest between midnight and 5am (hours 0-5) 
+ - Comparatively, fatalities go down less between hours 0 and 5. This could be due to decreased visibility at night.
+
+### Demographics
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+#PersonSex bar plots
+sexBar <- ggplot(data, aes(x=PersonSex,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
   scale_fill_manual(values=InjurySeverity.colors)
 
-monthHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Month,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+sexBarFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=PersonSex,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(legend.position = "none")+
   scale_fill_manual(values=InjurySeverity.colors)
 
-#Weekday
-weekdayHist <- ggplot(data, aes(x=Weekday,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+#PersonAge density plot
+ageDensity <- ggplot(data, aes(x=PersonAge,color=InjurySeverity))+
+  geom_density()+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Plots for demographics
+sexPlots <- sexBar + sexBarFatal 
+(sexPlots) + plot_layout(guides = "collect")
+
+ageDensity
+```
+Plotting the data for sex reveals some insights:
+ - There are more than 2 times as many male deaths compared to female deaths
+ - Collisions involving women have a higher proportion of injuries to no injuries
+ - Collisions involving men have a slightly higher rate of no injuries to injuries
+
+In the density plot for injury vs age: 
+  - No Injury and Injury rates are nearly identical, except in children under 12, who have a lower rate of injury
+  - Children under the age of 12 also have a lower share of deaths.
+  - Over the age of about 50, there are proportionately more deaths
+
+### Road & Weather Conditions
+```{r, warning=FALSE, echo=FALSE}
+#Weather
+weatherBar <- ggplot(data, aes(x=Weather,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
-weekdayHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Weekday,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+#RoadSurface
+roadSurfaceBar <- ggplot(data, aes(x=RoadSurface,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
-#Hour
-hourHist <- ggplot(data, aes(x=Hour,fill=InjurySeverity))+
-  geom_bar(bins=24)+
+weatherRoadCondBars <- weatherBar + roadSurfaceBar & theme(legend.position = "right")
+(weatherRoadCondBars) + plot_layout(guides = "collect")
+```
+Making an initial set of bar charts for weather & road surface conditions, we can see a problem right away - an overwhelming majority of these entries were recorded with clear/sunny weather and dry/normal road conditions. To some this might imply that vehicle collisions are much more likely to happen under clear & dry conditions, but intuitively we know this isn't true. Instead it likely means that there was mostly sunny & dry conditions at most times throughout the country. Also, we are not trying to find out under which conditions someone is likely to have a vehicle collision - we are trying to find out which conditions result in a higher chance of injury or fatality if one gets in a vehicle collision.
+
+The charts can be redone to show porportions: 
+
+```{r, warning=FALSE, echo=FALSE}
+#Count_Weather <- count(data, vars = c('Weather','InjurySeverity'))
+#Count_RoadSurface <- count(data, vars = c('RoadSurface','InjurySeverity'))
+
+#Weather
+weatherBar_proportion <- ggplot(data, aes(x=Weather, fill=InjurySeverity, by=Weather))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
-hourHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Hour,fill=InjurySeverity))+
-  geom_bar(bins=24)+
+#RoadSurface
+roadSurfaceBar_proportion <- ggplot(data, aes(x=RoadSurface, fill=InjurySeverity, by=RoadSurface))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
+weatherRoadCondBars_proportion <- weatherBar_proportion + roadSurfaceBar_proportion & theme(legend.position = "right")
+(weatherRoadCondBars_proportion) + plot_layout(guides = "collect")
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
 #Number of vehicles involved
 numVehiclesHist <- ggplot(data, aes(x=Vehicles,fill=InjurySeverity))+
-  geom_bar(bins=24)+
+  geom_bar(bins=24, position="dodge")+
   scale_fill_manual(values=InjurySeverity.colors)
 
 numVehiclesHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Vehicles,fill=InjurySeverity))+
@@ -250,7 +368,7 @@ numVehiclesHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), ae
 
 #RoadConfig
 roadConfigHist <- ggplot(data, aes(x=RoadConfig,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+  geom_bar(stat="count", position="dodge")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
@@ -259,22 +377,14 @@ roadConfigHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
-#Weather
-weatherHist <- ggplot(data, aes(x=Weather,fill=InjurySeverity))+
-  geom_bar(stat="count")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_fill_manual(values=InjurySeverity.colors)
+
 
 weatherHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Weather,fill=InjurySeverity))+
   geom_bar(stat="count")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
-#RoadSurface
-roadSurfaceHist <- ggplot(data, aes(x=RoadSurface,fill=InjurySeverity))+
-  geom_bar(stat="count")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_fill_manual(values=InjurySeverity.colors)
+
 
 roadSurfaceHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadSurface,fill=InjurySeverity))+
   geom_bar(stat="count")+
@@ -283,7 +393,7 @@ roadSurfaceHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), ae
 
 #RoadAlignment
 roadAlignmentHist <- ggplot(data, aes(x=RoadAlignment,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+  geom_bar(stat="count", position="dodge")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
@@ -294,7 +404,7 @@ roadAlignmentHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), 
 
 #Traffic
 trafficHist <- ggplot(data, aes(x=Traffic,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+  geom_bar(stat="count", position="dodge")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
@@ -304,46 +414,32 @@ trafficHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=
   scale_fill_manual(values=InjurySeverity.colors)
 
 #VehicleType
-vehTypeHist <- ggplot(data, aes(x=VehicleType,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+vehTypeDensity <- ggplot(data, aes(x=VehicleType,color=InjurySeverity))+
+  geom_density(stat="count", position="dodge")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_fill_manual(values=InjurySeverity.colors)
+  scale_color_manual(values=InjurySeverity.colors)
 
 vehTypeHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=VehicleType,fill=InjurySeverity))+
   geom_bar(stat="count")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
-#VehicleYear
-vehYearHist <- ggplot(data, aes(x=VehicleYear,fill=InjurySeverity))+
-  geom_bar(bins=100)+
-  scale_fill_manual(values=InjurySeverity.colors)
+#VehicleYear: density plot
+vehYearDensity <- ggplot(data %>% filter(VehicleYear > 1975), aes(x=VehicleYear,color=InjurySeverity))+
+  geom_density(position="dodge")+
+  scale_color_manual(values=InjurySeverity.colors)
 
 vehYearHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=VehicleYear,fill=InjurySeverity))+
   geom_bar(bins=100)+
   scale_fill_manual(values=InjurySeverity.colors)
 
-#PersonSex
-sexHist <- ggplot(data, aes(x=PersonSex,fill=InjurySeverity))+
-  geom_bar(stat="count")+
-  scale_fill_manual(values=InjurySeverity.colors)
 
-sexHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=PersonSex,fill=InjurySeverity))+
-  geom_bar(stat="count")+
-  scale_fill_manual(values=InjurySeverity.colors)
 
-#PersonAge
-ageHist <- ggplot(data, aes(x=PersonAge,fill=InjurySeverity))+
-  geom_bar(bins=99)+
-  scale_fill_manual(values=InjurySeverity.colors)
 
-ageHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=PersonAge,fill=InjurySeverity))+
-  geom_bar(bins=96)+
-  scale_fill_manual(values=InjurySeverity.colors)
 
 #PersonPosition
 pPositionHist <- ggplot(data, aes(x=PersonPosition,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+  geom_bar(stat="count", position="dodge")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
@@ -354,7 +450,7 @@ pPositionHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(
 
 #UserType
 pUserTypeHist <- ggplot(data, aes(x=UserType,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+  geom_bar(stat="count", position="dodge")+
   scale_fill_manual(values=InjurySeverity.colors)
 
 pUserTypeHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=UserType,fill=InjurySeverity))+
@@ -363,7 +459,7 @@ pUserTypeHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(
 
 #collisionType
 collisionTypeHist <- ggplot(data, aes(x=CollisionType,fill=InjurySeverity))+
-  geom_bar(stat="count")+
+  geom_bar(stat="count", position="dodge")+
   scale_fill_manual(values=InjurySeverity.colors)
 
 collisionTypeHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=CollisionType,fill=InjurySeverity))+
@@ -385,28 +481,20 @@ Bar charts are displayed grouped by theme:
  
  Note that for all variables, the amount of fatalities is drastically lower than the amount of injuries and non-injuries, to the point where it's impossible to view patterns in the data. Therefore, for each varaible there is a separate chart to show how fatalities correlate with each variable.
 
-```{r, out.width="100%"}
+```{r, out.width="150%", warnings=FALSE, echo=FALSE}
 #Display similar grouped histograms:
 
-#Histograms for time/day/month
-timeHists <- (monthHist|weekdayHist|hourHist) & theme(legend.position = "right")
-timeHistsFatal <- (monthHistFatal|weekdayHistFatal|hourHistFatal) & theme(legend.position = "none")
-(timeHists/timeHistsFatal) + plot_layout(guides = "collect")
 
-#Histograms for demographics
-demoHists <- sexHist + ageHist & theme(legend.position = "right")
-demoHistsFatal <- sexHistFatal + ageHistFatal & theme(legend.position = "none")
-(demoHists/demoHistsFatal) + plot_layout(guides = "collect")
+
+
 
 #Histograms for road & weather conditions
-weatherRoadCondHists <- weatherHist + roadSurfaceHist & theme(legend.position = "right")
-weatherRoadCondHistsFatal <- weatherHistFatal + roadSurfaceHistFatal & theme(legend.position = "none")
-(weatherRoadCondHists/weatherRoadCondHistsFatal) + plot_layout(guides = "collect")
+
 
 #Histograms for vehicle info
-vehicleInfoHists <- vehTypeHist + vehYearHist & theme(legend.position = "right")
-vehicleInfoHistsFatal <- vehTypeHistFatal + vehYearHistFatal & theme(legend.position = "none")
-(vehicleInfoHists/vehicleInfoHistsFatal) + plot_layout(guides = "collect")
+vehicleInfoHists <- vehYearDensity & theme(legend.position = "right")
+#vehicleInfoHistsFatal <- vehTypeHistFatal + vehYearHistFatal & theme(legend.position = "none")
+vehicleInfoHists + plot_layout(guides = "collect")
 
 #Histograms for road info
 roadInfoHists <- roadAlignmentHist + trafficHist + roadConfigHist & theme(legend.position = "right")
@@ -414,7 +502,7 @@ roadInfoHistsFatal <- roadAlignmentHistFatal + trafficHistFatal + roadConfigHist
 (roadInfoHists/roadInfoHistsFatal) + plot_layout(guides = "collect")
 
 #Histograms for driver/passenger info
-driverPassengerHists <- pPositionHist + pUserTypeHist & theme(legend.position = "right")
+driverPassengerHists <- pPositionHist / pUserTypeHist & theme(legend.position = "right")
 driverPassengerHistsFatal <- pPositionHistFatal + pUserTypeHistFatal & theme(legend.position = "none")
 (driverPassengerHists/driverPassengerHistsFatal) + plot_layout(guides = "collect")
 
