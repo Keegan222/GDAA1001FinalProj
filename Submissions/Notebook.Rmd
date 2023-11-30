@@ -251,55 +251,67 @@ numVehiclesHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), ae
 #RoadConfig
 roadConfigHist <- ggplot(data, aes(x=RoadConfig,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 roadConfigHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadConfig,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #Weather
 weatherHist <- ggplot(data, aes(x=Weather,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 weatherHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Weather,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #RoadSurface
 roadSurfaceHist <- ggplot(data, aes(x=RoadSurface,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 roadSurfaceHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadSurface,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #RoadAlignment
 roadAlignmentHist <- ggplot(data, aes(x=RoadAlignment,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 roadAlignmentHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadAlignment,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #Traffic
 trafficHist <- ggplot(data, aes(x=Traffic,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 trafficHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Traffic,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #VehicleType
 vehTypeHist <- ggplot(data, aes(x=VehicleType,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 vehTypeHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=VehicleType,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #VehicleYear
@@ -332,10 +344,12 @@ ageHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Pers
 #PersonPosition
 pPositionHist <- ggplot(data, aes(x=PersonPosition,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 pPositionHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=PersonPosition,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #UserType
