@@ -251,55 +251,67 @@ numVehiclesHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), ae
 #RoadConfig
 roadConfigHist <- ggplot(data, aes(x=RoadConfig,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 roadConfigHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadConfig,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #Weather
 weatherHist <- ggplot(data, aes(x=Weather,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 weatherHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Weather,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #RoadSurface
 roadSurfaceHist <- ggplot(data, aes(x=RoadSurface,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 roadSurfaceHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadSurface,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #RoadAlignment
 roadAlignmentHist <- ggplot(data, aes(x=RoadAlignment,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 roadAlignmentHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=RoadAlignment,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #Traffic
 trafficHist <- ggplot(data, aes(x=Traffic,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 trafficHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Traffic,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #VehicleType
 vehTypeHist <- ggplot(data, aes(x=VehicleType,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 vehTypeHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=VehicleType,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #VehicleYear
@@ -332,10 +344,12 @@ ageHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=Pers
 #PersonPosition
 pPositionHist <- ggplot(data, aes(x=PersonPosition,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 pPositionHistFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=PersonPosition,fill=InjurySeverity))+
   geom_bar(stat="count")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_manual(values=InjurySeverity.colors)
 
 #UserType
@@ -409,6 +423,32 @@ collisionHists <- collisionTypeHist + numVehiclesHist & theme(legend.position = 
 collisionHistsFatal <- collisionTypeHistFatal + numVehiclesHistFatal & theme(legend.position = "none")
 (collisionHists/collisionHistsFatal) + plot_layout(guides = "collect")
 ```
+
+
+The data is distributed in such a way that the majority of the results of the target variable 
+InjurySeverity are either No injury or Injury. No injury makes up (76530)/167803 or 45.6% of cases, 
+Injury makes up (90299)/167807 or 53.8% leaving only 974/167807 or 0.5% resulting in fatalities.  
+Fortunately, given the size of the data, we can acquire 3 suitably equal sized samples of the data 
+for training and testing purposes.
+
+
+```{r}
+fatalSet <- data %>%
+  filter(InjurySeverity == "Fatality") %>%
+  sample_n(900)
+
+injurySet <- data %>%
+  filter(InjurySeverity == "Injury") %>%
+  sample_n(900)
+
+noInjurySet <- data %>%
+  filter(InjurySeverity == "No injury") %>%
+  sample_n((900))
+
+data <- bind_rows(fatalSet,injurySet,noInjurySet, .id = NULL)
+
+```
+
 
 
 
