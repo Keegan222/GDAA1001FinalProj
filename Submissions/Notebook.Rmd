@@ -333,7 +333,7 @@ weatherRoadCondBars <- weatherBar + roadSurfaceBar & theme(legend.position = "ri
 ```
 Making an initial set of bar charts for weather & road surface conditions, we can see a problem right away - an overwhelming majority of these entries were recorded with clear/sunny weather and dry/normal road conditions. To some this might imply that vehicle collisions are much more likely to happen under clear & dry conditions, but intuitively we know this isn't true. Instead it likely means that there was mostly sunny & dry conditions at most times throughout the country. Also, we are not trying to find out under which conditions someone is likely to have a vehicle collision - we are trying to find out which conditions result in a higher chance of injury or fatality if one gets in a vehicle collision.
 
-The charts can be redone to show porportions: 
+The charts can be redone to show proportions: 
 
 ```{r, warning=FALSE, echo=FALSE}
 #Count_Weather <- count(data, vars = c('Weather','InjurySeverity'))
