@@ -568,10 +568,33 @@ This model excels when the data consists of observations broken into groups. The
 cartModel <- train(InjurySeverity~., data=training, method="rpart", metric=metric, trControl=control)
 predictions <- predict(cartModel, validation)
 
-cm1 <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
-cm1
+cmCart <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cmCart
 
-summary(cm1)
+summary(cmCart)
+```
+
+
+KNN (K-Nearest Neighbors):
+
+```{r}
+knnModel <- train(InjurySeverity~., data=training, method="knn", metric=metric, trControl=control)
+predictions <- predict(knnModel, validation)
+
+cmKnn <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cmKnn
+```
+
+
+
+SVM (Support Vector Machine):
+
+```{r}
+svmModel <- train(InjurySeverity~., data=training, method="svmRadial", metric=metric, trControl=control)
+predictions <- predict(svmModel, validation)
+
+cmSvm <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cmSvm
 ```
 
 
