@@ -559,6 +559,15 @@ metric <- "Accuracy"
 
 Running the Models:
 
+LDA (Linear Discriminant Analysis):
+
+This model works well with categorical predictor variables, however requires some assumptions be met. If the predictors are not normally distributed, could cause problems.
+
+
+
+
+
+
 C&RT (Classification and Regression Trees):
 
 This model excels when the data consists of observations broken into groups. There are a lot of categorical variables with multiple levels of factors making this model an ideal choice at first glance.
@@ -573,6 +582,7 @@ cmCart
 
 summary(cmCart)
 ```
+
 
 
 KNN (K-Nearest Neighbors):
