@@ -539,4 +539,12 @@ data <- bind_rows(fatalSet,injurySet,noInjurySet, .id = NULL)
 
 
 
+A partition is created to create separate subsets of our data for the purpose of training and validating the models.
+75% of our set will be used to train the data, and the remaining 25% will be used to validate the models we choose.
+
+```{r}
+inTraining <- createDataPartition(data$InjurySeverity, p=0.75, list=FALSE)
+training <- data[inTraining,]
+validation <- data[-inTraining,]
+```
 
