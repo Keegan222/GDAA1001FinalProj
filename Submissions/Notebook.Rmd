@@ -625,6 +625,11 @@ cmSvm <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
 cmSvm
 ```
 
+The SVM model will operate and produce a result, but also a lot of warnings. The data we have used includes a lot of variables that have factors that heavily outweigh the other factors ie. straight, level surfaces or dry, normal road surfaces. This means out data suffers from constant or "near-zero" variance, which the SVM and LDA models struggle with.
+
+
+
+
 GLM (Generalized Linear Models):
 
 The traditional method="glm" technique for our model will result in errors, as this model assumes the target variable is of a binary classification. Since our InjurySeverity target variable has 3 factors, we will need to apply a multinomial logistic regression model. This will pull from the nnet package.
