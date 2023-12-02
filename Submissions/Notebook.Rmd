@@ -480,6 +480,23 @@ Bar charts are displayed grouped by theme:
  - Collision info
  
  Note that for all variables, the amount of fatalities is drastically lower than the amount of injuries and non-injuries, to the point where it's impossible to view patterns in the data. Therefore, for each varaible there is a separate chart to show how fatalities correlate with each variable.
+ 
+ 
+ A few observations can be made with these histograms. To start, the histogram displaying the number of vehicles is drastically right skewed. Most collisions that occur involve at most 5 vehicles with the majority only involving 2. 
+ 
+The road configuration histogram shows us that there are primarily two cases of configuration consisting of either non-intersection or intersections at 2 roadways. The other cases are very uniquely rare conditions, which we see a few times in the data. The interesting observation here is that the proportion of fatalities at non-intersections are much higher than intersections. 
+
+Road alignment suffers from primarily a single outcome of straight and level roads. There is a noticeable impact however of curved and level surfaces involving fatalities. 
+
+There are 3 impactful factors for traffic control, namely traffic signals not fully operational, stop sign, or primarily no control present. This is consistent with fatality cases. 
+
+Vehicle type accidents are primarily classed as light duty vehicles as these are used most often for daily commutes. It should be noted that motorcycles are impactful when observing fatalities, 
+
+The histogram for vehicle year is left skewed, and most years rest within 2012 to 2020. When switching to fatalities, the dates seem to shift towards older vehicles, indicating what could be a lack in safety features and overall condition of the infrastructure of older vehicles. 
+
+This spike in collision cases across all severities after the age of 16 is likely a result of inexperienced drivers and as age increases the driving experience would as well. 
+ 
+ 
 
 ```{r, out.width="150%", warnings=FALSE, echo=FALSE}
 #Display similar grouped histograms:
