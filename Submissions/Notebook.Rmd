@@ -34,6 +34,7 @@ library(tmap)
 library(grid)
 library(gridExtra)
 library(patchwork)
+library(nnet)
 ```
 
 ## Loading the dataset
@@ -624,4 +625,16 @@ cmSvm <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
 cmSvm
 ```
 
+GLM (Generalized Linear Models):
+
+The traditional method="glm" technique for our model will result in errors, as this model assumes the target variable is of a binary classification. Since our InjurySeverity target variable has 3 factors, we will need to apply a multinomial logistic regression model. This will pull from the nnet package.
+
+```{r}
+fit.multinom <- multinom(InjurySeverity ~ ., data = training)
+predictions <- predict(fit.multinom, validation)
+
+
+cm4 <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cm4
+```
 
