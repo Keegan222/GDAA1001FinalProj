@@ -1,0 +1,756 @@
+---
+title: "Determining Risk Factors for Injuries and Fatalities in Road Collisions"
+authors: "Reuben Walker, Keegan MacDonald, Sanita Richards & Corey Thorne"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Introduction
+The Canadian National Collision Database contains information on all
+police-reported motor vehicle collisions over many years. The attached dataset
+"2019_dataset_en.csv" contains such information for 272301 collisions in the
+year 2019.
+
+This R Notebook will load this dataset, clean, inspect and visualize its
+contents, and produce a machine learning model to predict the severity of a
+collision (whether it resulted in no injuries, non-fatal, or fatal injuries)
+given a subset of the other available information.
+
+## Loading libraries
+The following libraries will be required to run this R Notebook:
+
+```{r}
+library(readr)
+library(dplyr)
+library(plyr)
+library(tidyverse)
+library(RColorBrewer)
+library(GGally)
+library(data.table)
+library(sf)
+library(ggspatial)
+library(tmap)
+library(grid)
+library(gridExtra)
+library(patchwork)
+library(nnet)
+library(caret)
+library(likert)
+```
+
+## Loading the dataset
+The dataset will be loaded as a CSV into the active R environment, it must be
+located in the same directory as this R Notebook:
+
+```{r}
+data <- read_csv("2019_dataset_en.csv", show_col_types = FALSE)
+```
+
+## Cleaning the data
+To clean the data, six columns containing unique identifiers, the year (2019),
+and other variables not relevant or inhibitory to this machine learning task
+must be removed as follows:
+
+```{r}
+data <- data %>%
+  select(-c(C_YEAR, C_SEV, V_ID, P_ID, P_SAFE, C_CASE))
+```
+
+For the meanings of these column names, refer to the attached
+"data_dictionary.pdf" for details.
+
+The remaining columns are almost exclusively categorical variables, and contain
+categories for unknown and missing data. These must be removed for the machine
+learning model to process the dataset.
+
+```{r}
+data <- data %>%
+  filter(C_MNTH!="UU",C_MNTH!="XX") %>%
+  filter(C_WDAY!="U") %>% 
+  filter(C_HOUR!="UU") %>%
+  filter(C_VEHS!="UU",C_VEHS!="XX") %>%
+  filter(C_CONF!="QQ",C_CONF!="UU",C_CONF!="XX") %>%
+  filter(C_RCFG!="QQ",C_RCFG!="UU",C_RCFG!="XX") %>% 
+  filter(C_WTHR!="U",C_WTHR!="X",C_WTHR!="Q") %>% 
+  filter(C_RSUR!="U",C_RSUR!="X",C_RSUR!="Q") %>%
+  filter(C_RALN!="U",C_RALN!="X",C_RALN!="Q") %>%
+  filter(C_TRAF!="QQ",C_TRAF!="UU",C_TRAF!="XX") %>%
+  filter(V_TYPE!="NN",V_TYPE!="QQ",V_TYPE!="UU",V_TYPE!="XX") %>%
+  filter(V_YEAR!="NNNN",V_YEAR!="UUUU",V_YEAR!="XXXX") %>%
+  filter(P_SEX!="N",P_SEX!="U",P_SEX!="X") %>%
+  filter(P_AGE!="NN",P_AGE!="UU",P_AGE!="XX") %>%
+  filter(P_PSN!="NN",P_PSN!="QQ",P_PSN!="UU",P_PSN!="XX") %>%
+  filter(P_USER!="U") %>%
+  filter(P_ISEV!="N",P_ISEV!="U")
+```
+
+Removing these leaves 17 of the original 23 columns and 167803 of the original
+272301 observations. Finally, the most of remaining data must be converted to
+factors / categorical variables, and some variables will be grouped into fewer
+categories than they began with.
+
+```{r}
+# Group the C_CONF column while naming categories.
+data <- data %>%
+  mutate(C_CONF = (ifelse(data$C_CONF <= 10, 'Single Vehicle',
+                    ifelse(data$C_CONF>20 & data$C_CONF <30, '2 Vehicles',
+                    ifelse(data$C_CONF>30 & data$C_CONF<40,'2 Vehicles Head On','2 Vehicles Parked')))))
+
+# Convert most variables to factors and some to numeric.
+data$C_MNTH <- as.factor(data$C_MNTH)
+data$C_WDAY <- as.factor(data$C_WDAY)
+data$C_HOUR <- as.numeric(data$C_HOUR)
+data$C_VEHS <- as.numeric(data$C_VEHS)
+data$C_CONF <- as.factor(data$C_CONF)
+data$C_RCFG <- as.factor(data$C_RCFG)
+data$C_WTHR <- as.factor(data$C_WTHR)
+data$C_RSUR <- as.factor(data$C_RSUR)
+data$C_RALN <- as.factor(data$C_RALN)
+data$C_TRAF <- as.factor(data$C_TRAF)
+data$V_TYPE <- as.factor(data$V_TYPE)
+data$V_YEAR <- as.numeric(data$V_YEAR)
+data$P_SEX <- as.factor(data$P_SEX)
+data$P_AGE <- as.numeric(data$P_AGE)
+data$P_PSN <- as.factor(data$P_PSN)
+data$P_ISEV <- as.factor(data$P_ISEV)
+data$P_USER <- as.factor(data$P_USER)
+```
+
+To improve the readability of the data for the remainder of this script, the
+values of categorical variables and the columns will be assigned English names:
+
+```{r}
+# Assign names to values of categorical variables.
+data <- data %>%
+  mutate(C_MNTH = dplyr::recode(C_MNTH,
+                        "1" = "Jan", "2" = "Feb", "3" = "Mar", "4" = "Apr",
+                        "5" = "May", "6" = "Jun", "7" = "Jul", "8" = "Aug",
+                        "9" = "Sep", "10" = "Oct", "11" = "Nov", "12" = "Dec")) %>%
+  mutate(C_WDAY = dplyr::recode(C_WDAY,
+                        "1" = "Mon", "2" = "Tue", "3" = "Wed", "4" = "Thu",
+                        "5" = "Fri", "6" = "Sat", "7" = "Sun")) %>%
+  mutate(C_RCFG = dplyr::recode(C_RCFG,
+                         "1" = "Non-Intersection",
+                         "2" = "Intersection - 2 public roadways",
+                         "3" = "Intersection - parking, driveway etc.",
+                         "4" = "Railroad level crossing",
+                         "5" = "Bridge, overpass, viaduct",
+                         "6" = "Tunnel or underpass",
+                         "7" = "Passing or climbing lane",
+                         "8" = "Ramp",
+                         "9" = "Traffic circle",
+                         "10" = "Express lane of a freeway",
+                         "11" = "Collector lane of a freeway",
+                         "12" = "Transfer lane of a freeway")) %>%
+  mutate(C_WTHR = dplyr::recode(C_WTHR,
+                         "1" = "Clear & sunny", "2" = "Cloudy, no precipitation",
+                         "3" = "Raining", "4" = "Snowing",
+                         "5" = "Freezing rain, sleet, hail",
+                         "6" = "Visibility limitation", "7" = "Strong wind")) %>%
+  mutate(C_RSUR = dplyr::recode(C_RSUR,
+                         "1" = "Dry, normal", "2" = "Wet", "3" = "Snow",
+                         "4" = "Slush, wet snow", "5" = "Icy", "6" = "Sand/gravel/dirt",
+                         "7" = "Muddy", "8" = "Oil", "9" = "Flooded")) %>%
+  mutate(C_RALN = dplyr::recode(C_RALN,
+                         "1" = "Straight and level", "2" = "Straight with gradient",
+                         "3" = "Curved and level", "4" = "Curved with gradient",
+                         "5" = "Top of hill or gradient", "6" = "bottom of hill or gradient")) %>%
+  mutate(C_TRAF = dplyr::recode(C_TRAF,
+                         "1" = "Traffic signals fully operational",
+                         "2" = "Traffic signals in flashing mode", "3" = "Stop sign",
+                         "4" = "Yield sign", "5" = "Warning sign",
+                         "6" = "Pedestrian crosswalk", "7" = "Police officer",
+                         "8" = "School guard, flagman", "9" = "School crossing",
+                         "10" = "Reduced speed zone", "11" = "No passing zone sign",
+                         "12" = "Marking on the road",
+                         "13" = "School bus - signal lights flashing",
+                         "14" = "School bus - signal lights not flashing",
+                         "15" = "Railway crossing with signals, gates",
+                         "16" = "Railway crossing with signs only",
+                         "17" = "Control device not specified",
+                         "18" = "No control present")) %>%
+  mutate(V_TYPE = dplyr::recode(V_TYPE,
+                         "1" = "Light duty vehicle", "5" = "Panel/cargo van",
+                         "6" = "Other trucks and vans", "7" = "Unit trucks > 4536 kg",
+                         "8" = "Road tractor", "9" = "School bus",
+                         "10" = "Smaller school bus", "11" = "Urban and intercity bus",
+                         "14" = "Motorcycle and moped", "16" = "Off road vehicles",
+                         "17" = "Bicycle", "18" = "Purpose-built motorhome",
+                         "19" = "Farm equipment", "20" = "Construction equipment",
+                         "21" = "Fire engine", "22" = "Snowmobile", "23" = "Streetcar")) %>%
+  mutate(P_PSN = dplyr::recode(P_PSN,
+                        "11" = "Driver", "12" = "Front row, center",
+                        "13" = "Front row, right outboard", "21" = "Second row, left outboard",
+                        "22" = "Second row, center", "23" = "Second Row, right outboard",
+                        "31" = "Third row, left outboard", "32" = "Third row, center",
+                        "33" = "Third row, right outboard", "96" = "Position unknown, but on-board",
+                        "97" = "Sitting on someone's lap", "98" = "Outside passenger compartment",
+                        "99" = "Pedestrian")) %>%
+  mutate(P_ISEV = dplyr::recode(P_ISEV,
+                         "1" = "No injury", "2" = "Injury", "3" = "Fatality")) %>%
+  mutate(P_USER = dplyr::recode(P_USER,
+                         "1" = "Motor vehicle driver", "2" = "Motor vehicle passenger",
+                         "3" = "Pedestrian", "4" = "Bicyclist", "5" = "Motorcyclist"))
+# Assign column names.
+names(data) <- c("Month", "Weekday", "Hour", "Vehicles", "CollisionType", 
+                   "RoadConfig", "Weather", "RoadSurface", 
+                  "RoadAlignment", "Traffic", "VehicleType", 
+                  "VehicleYear", "PersonSex", "PersonAge", 
+                  "PersonPosition", "InjurySeverity", "UserType")
+
+```
+
+With these modifications, the data is mostly prepared for machine learning tasks,
+and must now be visualized to show any more subtle problems that may appear
+during training of a model.
+
+## Exploratory Data Analysis & Visualization
+First of all, getting a count of each level of injury severity reveals that the amount of collisions resulting in no injury or an injury vastly outweighs the amount of fatalities. This has implications for how we should display the data: when all 3 variables are displayed in the same graph, the fatalities are dwarfed by the no-injury and injury entries to the point where it becomes impossible to examine trends in fatalities. Therefore, we found it useful in most situations to create separate plots for fatalities in order to properly visualize them.
+```{r, warning=FALSE, echo=FALSE}
+summary(data$InjurySeverity)
+```
+
+### Month, weekday, and hour
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+# Set up histogram colors for histograms
+InjurySeverity.colors <- c('Fatality' = 'brown1', 'Injury' = 'darkgoldenrod1', 'No injury' = 'darkseagreen4')
+
+# This bit of code ensures that months display in the proper order on the bar charts
+data$Month <- factor(data$Month, levels=c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'))
+
+#Create counts for the Month and Weekday Varaibles
+Count_Month <- count(data, vars = c('Month','InjurySeverity'))
+Count_Weekday <- count(data, vars = c('Weekday','InjurySeverity'))
+
+#Month line graph
+monthLine <- ggplot(Count_Month, aes(x=Month,y=freq,group=InjurySeverity,color=InjurySeverity))+
+  geom_line()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Month line graph (fatalities only)
+monthLineFatal <- ggplot(Count_Month %>% filter(InjurySeverity == "Fatality"), aes(x=Month,y=freq,group=InjurySeverity,color=InjurySeverity))+
+  geom_line()+
+  theme(legend.position = "none")+
+  ylim(0,180)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Weekday line graph
+weekdayLine <- ggplot(Count_Weekday, aes(x=Weekday,y=freq,group=InjurySeverity,color=InjurySeverity))+
+  geom_line()+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Weekday line graph (fatalities only)
+weekdayLineFatal <- ggplot(Count_Weekday %>% filter(InjurySeverity == "Fatality"), aes(x=Weekday,y=freq,group=InjurySeverity,color=InjurySeverity))+
+  geom_line()+
+  theme(legend.position = "none")+
+  ylim(0,180)+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Hour density plot
+hourDensity <- ggplot(data, aes(x=Hour,color=InjurySeverity))+
+  geom_density()+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Display plots for day & month
+monthPlots <- (monthLine|monthLineFatal)
+weekdayPlots <- (weekdayLine|weekdayLineFatal)
+(monthPlots/weekdayPlots) + plot_layout(guides = "collect")
+
+#Display hour density plot
+hourDensity
+```
+With these graphs, we can see that collisions of all types follow the same general trends over the course of the year & course of each week. The shape of the lines for No Injury and Injury are nearly the same in both graphs. Here are some trends of note:
+
+ - More collisions in summer months, peaking in June
+ - Less collisions in winter months, bottoming out in April
+ - Collisions dip in September, then rise again in October before resuming the downwards trend
+ 
+Fatalities follow the same general pattern, but note that there seems to be a consistent low level of fatalities from Jan-Apr, whereas for other types of collisions the number starts higher and then decreases.
+
+Over the course of a week, overall collisions: 
+
+ - Increase over the week, peaking on Friday. 
+ - Decrease sharply over the weekend
+ 
+The decrease over the weekend is likely due to reduced commuting levels. Fatalities follow the same general pattern, but are slightly higher on Mondays & Tuesdays, with the lowest amount of fatalities on Wednesday.
+
+The density plot of collisions over the course of the day shows that collisions are likely correlated by overall commuting patterns. Here are some observations:
+
+ - Overall collisions have a small spike at about 7am (hour 7)
+ - Larger spike after about 3pm (hour 15)
+ - Collisions are lowest between midnight and 5am (hours 0-5) 
+ - Comparatively, fatalities go down less between hours 0 and 5. This could be due to decreased visibility at night.
+
+### Demographics
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+#PersonSex bar plots
+sexBar <- ggplot(data, aes(x=PersonSex,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+sexBarFatal <- ggplot(data %>% filter(InjurySeverity == "Fatality"), aes(x=PersonSex,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(legend.position = "none")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#PersonAge density plot
+ageDensity <- ggplot(data, aes(x=PersonAge,color=InjurySeverity))+
+  geom_density()+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Plots for demographics
+sexPlots <- sexBar + sexBarFatal 
+(sexPlots) + plot_layout(guides = "collect")
+
+ageDensity
+```
+Plotting the data for sex reveals some insights:
+ - There are more than 2 times as many male deaths compared to female deaths
+ - Collisions involving women have a higher proportion of injuries to no injuries
+ - Collisions involving men have a slightly higher rate of no injuries to injuries
+
+In the density plot for injury vs age: 
+  - No Injury and Injury rates are nearly identical, except in children under 12, who have a lower rate of injury
+  - Children under the age of 12 also have a lower share of deaths.
+  - Over the age of about 50, there are proportionately more deaths
+
+### Road & Weather Conditions
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+#Weather
+weatherBar <- ggplot(data, aes(x=Weather,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#RoadSurface
+roadSurfaceBar <- ggplot(data, aes(x=RoadSurface,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+weatherRoadCondBars <- weatherBar + roadSurfaceBar & theme(legend.position = "right")
+(weatherRoadCondBars) + plot_layout(guides = "collect")
+```
+Making an initial set of bar charts for weather & road surface conditions, we can see a problem right away - an overwhelming majority of these entries were recorded with clear/sunny weather and dry/normal road conditions. To some this might imply that vehicle collisions are much more likely to happen under clear & dry conditions, but intuitively we know this isn't true. Instead it likely means that there was mostly sunny & dry conditions at most times throughout the country. Also, we are not trying to find out under which conditions someone is likely to have a vehicle collision - we are trying to find out which conditions result in a higher chance of injury or fatality if one gets in a vehicle collision.
+
+The charts can be redone to show proportions: 
+
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+#Weather
+weatherBar_proportion <- ggplot(data, aes(x=Weather, fill=InjurySeverity, by=Weather))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylab("Proportion")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#RoadSurface
+roadSurfaceBar_proportion <- ggplot(data, aes(x=RoadSurface, fill=InjurySeverity, by=RoadSurface))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylab("Proportion")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+weatherRoadCondBars_proportion <- weatherBar_proportion + roadSurfaceBar_proportion & theme(legend.position = "right")
+(weatherRoadCondBars_proportion) + plot_layout(guides = "collect")
+
+```
+
+Weather seems to have a minimal effect on injury and nearly no effect on fatalities. As for road surface, there is an increasing proportion of injuries as the road surface conditions deviate from dry & normal. The highest proportion of injuries occur on sand/gravel/dirt roads, and oil-covered road. Of note is the comparatively large proportion of fatalities on flooded roads. Also of note, there were no fatalities for muddy and oil-covered roads - this is likely because there was a low number of entries for these types of road surface:
+
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+Count_RoadSurface <- count(data, vars = c('RoadSurface','InjurySeverity'))
+filter(Count_RoadSurface, RoadSurface == 'Oil'|RoadSurface == 'Flooded'|RoadSurface == 'Muddy')
+```
+
+Upon inspecting, it is also revealed that there was only one fatality on flooded roads - the proportion seemed much higher because there were only 12 recorded collisions on flooded roads.
+
+### Vehicle Properties
+These plots are to investigate how injury severity might be correlated with the properties of the vehicle, such as the type & make.
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+#VehicleYear: density plot
+vehYearDensity <- ggplot(data %>% filter(VehicleYear > 1975), aes(x=VehicleYear,color=InjurySeverity))+
+  geom_density(position="dodge")+
+  scale_color_manual(values=InjurySeverity.colors)
+
+#Histograms for vehicle info
+vehYearDensity + plot_layout(guides = "collect")
+```
+
+The vehicle year data is left skewed, and most years rest within 2012 to 2020. 
+
+For vehicle year, one interesting pattern to note is that older vehicles are correlated with higher fatalities, indicating what could be a lack in safety features and overall condition of older vehicles. The proportion of fatalities falls noticeably for cars made after 2010. 
+
+For this plot, we removed all cars from before 1975, since there were very records involving cars from before this year and it made the graph difficult to read. 
+
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+
+#VehicleType
+vehTypeBar <- ggplot(data, aes(x=VehicleType,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+vehTypeBar_proportion <- ggplot(data, aes(x=VehicleType, fill=InjurySeverity, by=VehicleType))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylab("Proportion")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Histograms for vehicle info
+vehTypeBar
+vehTypeBar_proportion + plot_layout(guides = "collect")
+```
+
+Vehicle type accidents are primarily classed as light duty vehicles as these are used most often for daily commutes. Making a proportional bar plot reveals more useful information:
+
+ - Motorcycle/mopeds and bicycles have a far higher rate of injury & fatality.
+ - Collisions involving buses, fire engines, and other large vehicles commonly driven by professional drivers have a lower rate of injuries and fatalities associated with them.
+
+### Road Properties
+These plots will investigate the properties of the road & traffic signalling in which collisions occured.
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+#RoadConfig
+roadConfigBar <- ggplot(data, aes(x=RoadConfig,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#RoadAlignment
+roadAlignmentBar <- ggplot(data, aes(x=RoadAlignment,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Traffic
+trafficBar <- ggplot(data, aes(x=Traffic,fill=InjurySeverity))+
+  geom_bar(stat="count", position="dodge")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Histograms for road info
+roadAlignmentBar & theme(legend.position = "right")
+trafficBar & theme(legend.position = "right")
+roadConfigBar & theme(legend.position = "right")
+```
+The road configuration plot shows us that there are primarily two cases of configuration consisting of either non-intersection or intersections at 2 roadways. The other cases are very uniquely rare conditions, which we see a few times in the data. Additionally, road alignment suffers from primarily a single outcome of straight and level roads. To get better insights we will create a set of proportional bar graphs to better illustrate rates of injury & fatality under different road properties.
+
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+#RoadConfig
+roadConfigBar_proportion <- ggplot(data, aes(x=RoadConfig, fill=InjurySeverity, by=RoadConfig))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylab("Proportion")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#RoadAlignment
+roadAlignmentBar_proportion <- ggplot(data, aes(x=RoadAlignment, fill=InjurySeverity, by=RoadAlignment))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylab("Proportion")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Traffic
+trafficBar_proportion <- ggplot(data, aes(x=Traffic, fill=InjurySeverity, by=Traffic))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylab("Proportion")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#Histograms for road info
+roadAlignmentBar_proportion & theme(legend.position = "right")
+trafficBar_proportion & theme(legend.position = "right")
+roadConfigBar_proportion & theme(legend.position = "right")
+```
+Observations of note:
+ - Higher proportion of injury and fatality on curved roads, or on tops/bottoms of hills.
+ - Higher rate of fatalities at railroad crossings
+ - Higher rate of fatalities in passing/climbing lanes
+ - The proportion of fatalities at non-intersections are higher than at intersections. 
+ - There are 3 impactful factors for traffic control, namely traffic signals not fully operational, stop sign, or primarily no control present. This is consistent with fatality cases. 
+
+### Position & User Type
+We will investigate the correlation between the position of the person in the car (as in, what seat they are sitting in) with injury & fatality. We will also investigate the correlation between the type of road user (driver, passenger, cyclist) and the rate of injury & fatality.
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+
+#PersonPosition
+PersonPositionBar_proportion <- ggplot(data, aes(x=PersonPosition, fill=InjurySeverity, by=PersonPosition))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylab("Proportion")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#UserType
+UserTypeBar_proportion <- ggplot(data, aes(x=UserType, fill=InjurySeverity, by=UserType))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylab("Proportion")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+PersonPositionBar_proportion & theme(legend.position = "right")
+UserTypeBar_proportion & theme(legend.position = "right")
+```
+
+Observations from this:
+
+ - People who were involved in collisions who were outside of the passenger compartment (ie - riding in the bed of a pickup truck) had a 100% injury rate
+ - There was a higher fatality rate for people with unknown positions - likely because accidents that caused fatalities were so much more extreme to the point where it's impossible to tell where in the vehicle someone was originally sitting.
+ - Passengers in the second & third row of the vehicle had a slightly reduced rate of injury.
+ - Motor vehicle drivers and passengers have about the same rates of injury & fatality, but bicyclists and motorcyclists had a very high rate or injury and relatively higher rate of fatality.
+ - Motorcyclists had a higher fatality rate, likely due to the combination of high speeds and lack of protection.
+
+### Collision Type and Number of Vehicle Involved
+These plots will compare the collision type and the number of vehicles involved. There is some overlap in these two variables, but the collision type specifies if the collision is two vehicles moving in the same direction, two vehicles moving in opposite directions (head on), with a parked/moving car, or with just one car etc.
+```{r,out.width="150%", warning=FALSE, echo=FALSE}
+
+#Number of vehicles involved
+numVehiclesDens <- ggplot(data %>% filter(Vehicles <= 6), aes(x=Vehicles, fill=InjurySeverity, by=Vehicles))+
+  geom_bar(position="dodge")+
+  theme(axis.text.x = element_text())+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+#CollisionType
+CollisionTypeBar_proportion <- ggplot(data, aes(x=CollisionType, fill=InjurySeverity, by=CollisionType))+
+  geom_bar(position="fill")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylab("Proportion")+
+  scale_fill_manual(values=InjurySeverity.colors)
+
+PersonPositionBar_proportion & theme(legend.position = "right")
+UserTypeBar_proportion & theme(legend.position = "right")
+CollisionTypeBar_proportion & theme(legend.position = "right")
+numVehiclesDens & theme(legend.position = "right")
+```
+For the Number of Vehicles involved, we chose to only show collisions up to 8 vehicles - there was an entry involving 60+ vehicles that stretched the graph extremely wide with few other entries in between. These entries will still be used for training the model.
+
+Observations from this:
+ - Most collisions that occur involve at most 5 vehicles with the majority only involving 2. 
+ - Collisions involving a single vehicle had a higher proportion of injury. This could be because there are more possibilities for milder collisions between 2 vehicles, whereas colliding with a stationary object is likely to result from more unsafe driving.
+ 
+
+The data is distributed in such a way that the majority of the results of the target variable 
+InjurySeverity are either No injury or Injury. No injury makes up (76530)/167803 or 45.6% of cases, 
+Injury makes up (90299)/167807 or 53.8% leaving only 974/167807 or 0.5% resulting in fatalities.  
+Fortunately, given the size of the data, we can acquire 3 suitably equal sized samples of the data 
+for training and testing purposes.
+
+
+```{r}
+fatalSet <- data %>%
+  filter(InjurySeverity == "Fatality") %>%
+  sample_n(900)
+
+injurySet <- data %>%
+  filter(InjurySeverity == "Injury") %>%
+  sample_n(900)
+
+noInjurySet <- data %>%
+  filter(InjurySeverity == "No injury") %>%
+  sample_n((900))
+
+data <- bind_rows(fatalSet,injurySet,noInjurySet, .id = NULL)
+
+```
+
+
+
+A partition is created to create separate subsets of our data for the purpose of training and validating the models.
+75% of our set will be used to train the data, and the remaining 25% will be used to validate the models we choose.
+
+```{r}
+inTraining <- createDataPartition(data$InjurySeverity, p=0.75, list=FALSE)
+training <- data[inTraining,]
+validation <- data[-inTraining,]
+```
+
+
+Two parameters will be needed for the models. One is the method in which the control data will be training the model. The method used is cross-validation. This method splits the dataset randomly into groups and runs a series of tests that store results used to measure the metric of interest. We will repeat this for 20 unique tests sets. The metric of interest is the accuracy of the model.
+
+```{r}
+control <- trainControl(method="cv", number=20)
+metric <- "Accuracy"
+```
+
+
+Running the Models:
+
+LDA (Linear Discriminant Analysis):
+
+This model works well with categorical predictor variables, however requires some assumptions be met. If the predictors are not normally distributed, could cause problems.
+
+
+
+
+
+
+C&RT (Classification and Regression Trees):
+
+This model excels when the data consists of observations broken into groups. There are a lot of categorical variables with multiple levels of factors making this model an ideal choice at first glance.
+
+
+```{r}
+cartModel <- train(InjurySeverity~., data=training, method="rpart", metric=metric, trControl=control)
+predictions <- predict(cartModel, validation)
+
+cmCart <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cmCart
+
+summary(cmCart)
+```
+
+
+CART models should be able to handle multivariate factor levels for the target variable, however for whatever reason, the model never makes a prediction for the 'Injury' factor.
+
+
+```{r}
+cm_d <- as.data.frame(cmCart$table)
+all_levels <- unique(c(levels(cm_d$Prediction), levels(cm_d$Reference)))
+cm_d$Prediction <- factor(cm_d$Prediction, levels = all_levels)
+cm_d$Reference <- factor(cm_d$Reference, levels = all_levels)
+
+cm_d$diag <- cm_d$Prediction == cm_d$Reference
+cm_d$ndiag <- cm_d$Prediction != cm_d$Reference
+cm_d[cm_d == 0] <- NA
+cm_d$Reference <- factor(cm_d$Reference, levels = rev(levels(cm_d$Reference)))
+cm_d$ref_freq <- cm_d$Freq * ifelse(is.na(cm_d$diag), -1, 1)
+
+plt1 <- ggplot(data = cm_d, aes(x = Prediction, y = Reference, fill = Freq)) +
+  scale_x_discrete(position = "top") +
+  geom_tile(aes(fill = ref_freq)) +
+  scale_fill_gradient2(guide = FALSE, low = "red3", high = "orchid4", midpoint = 0, na.value = 'white') +
+  geom_text(aes(label = Freq), color = 'black', size = 3) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.position = "none",
+        panel.border = element_blank(),
+        plot.background = element_blank(),
+        axis.line = element_blank(),
+  )
+plt1
+```
+
+
+It's a shame because otherwise, it looks like it does a half decent job at correct True Positives for 'No injury' and 'Fatality'
+
+
+
+KNN (K-Nearest Neighbors):
+
+```{r}
+knnModel <- train(InjurySeverity~., data=training, method="knn", metric=metric, trControl=control)
+predictions <- predict(knnModel, validation)
+
+cmKnn <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cmKnn
+```
+
+The KNN model does a decent job at correctly predicting fatalities, however it struggles a bit with the other two. This suggests that the information regarding fatalities is more meaningful and distinct from the other two factors.  
+
+
+```{r}
+cm_d <- as.data.frame(cmKnn$table)
+cm_d$diag <- cm_d$Prediction == cm_d$Reference 
+cm_d$ndiag <- cm_d$Prediction != cm_d$Reference    
+cm_d[cm_d == 0] <- NA 
+cm_d$Reference <-  reverse.levels(cm_d$Reference) 
+cm_d$ref_freq <- cm_d$Freq * ifelse(is.na(cm_d$diag),-1,1)
+
+plt1 <-  ggplot(data = cm_d, aes(x = Prediction , y =  Reference, fill = Freq))+
+  scale_x_discrete(position = "top") +
+  geom_tile( data = cm_d,aes(fill = ref_freq)) +
+  scale_fill_gradient2(guide = FALSE ,low="red3",high="orchid4", midpoint = 0,na.value = 'white') +
+  geom_text(aes(label = Freq), color = 'black', size = 3)+
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.position = "none",
+        panel.border = element_blank(),
+        plot.background = element_blank(),
+        axis.line = element_blank(),
+  )
+plt1
+```
+
+
+
+SVM (Support Vector Machine):
+
+```{r}
+svmModel <- train(InjurySeverity~., data=training, method="svmRadial", metric=metric, trControl=control)
+predictions <- predict(svmModel, validation)
+
+cmSvm <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cmSvm
+```
+
+The SVM model will operate and produce a result, but also a lot of warnings. The data we have used includes a lot of variables that have factors that heavily outweigh the other factors ie. straight, level surfaces or dry, normal road surfaces. This means out data suffers from constant or "near-zero" variance, which the SVM and LDA models struggle with.
+
+```{r}
+cm_d <- as.data.frame(cmSvm$table)
+cm_d$diag <- cm_d$Prediction == cm_d$Reference 
+cm_d$ndiag <- cm_d$Prediction != cm_d$Reference    
+cm_d[cm_d == 0] <- NA 
+cm_d$Reference <-  reverse.levels(cm_d$Reference)
+cm_d$ref_freq <- cm_d$Freq * ifelse(is.na(cm_d$diag),-1,1)
+
+plt1 <-  ggplot(data = cm_d, aes(x = Prediction , y =  Reference, fill = Freq))+
+  scale_x_discrete(position = "top") +
+  geom_tile( data = cm_d,aes(fill = ref_freq)) +
+  scale_fill_gradient2(guide = FALSE ,low="red3",high="orchid4", midpoint = 0,na.value = 'white') +
+  geom_text(aes(label = Freq), color = 'black', size = 3)+
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.position = "none",
+        panel.border = element_blank(),
+        plot.background = element_blank(),
+        axis.line = element_blank(),
+  )
+plt1
+```
+
+
+A positive take-away from this model thus far is that there are noticeably smaller cases of false positives when the incident is a fatality but predicts no injury. Would be unfortunate for the model to say there's nothing to be concerned about when in fact someone is fatally injured on the scene.
+
+
+
+
+GLM (Generalized Linear Models):
+
+The traditional method="glm" technique for our model will result in errors, as this model assumes the target variable is of a binary classification. Since our InjurySeverity target variable has 3 factors, we will need to apply a multinomial logistic regression model. This will pull from the nnet package.
+
+```{r}
+fit.multinom <- multinom(InjurySeverity ~ ., data = training)
+predictions <- predict(fit.multinom, validation)
+
+
+cmGlm <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cmGlm
+```
+
+This model has our highest accuracy yet. The other noticeable positive note is the continuation of low false positives for predicting no ijury when fatality has occured.
+
+
+```{r}
+cm_d <- as.data.frame(cmGlm$table)
+cm_d$diag <- cm_d$Prediction == cm_d$Reference
+cm_d$ndiag <- cm_d$Prediction != cm_d$Reference 
+cm_d[cm_d == 0] <- NA 
+cm_d$Reference <-  reverse.levels(cm_d$Reference) 
+cm_d$ref_freq <- cm_d$Freq * ifelse(is.na(cm_d$diag),-1,1)
+
+plt1 <-  ggplot(data = cm_d, aes(x = Prediction , y =  Reference, fill = Freq))+
+  scale_x_discrete(position = "top") +
+  geom_tile( data = cm_d,aes(fill = ref_freq)) +
+  scale_fill_gradient2(guide = FALSE ,low="red3",high="orchid4", midpoint = 0,na.value = 'white') +
+  geom_text(aes(label = Freq), color = 'black', size = 3)+
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.position = "none",
+        panel.border = element_blank(),
+        plot.background = element_blank(),
+        axis.line = element_blank(),
+  )
+plt1
+```
+
