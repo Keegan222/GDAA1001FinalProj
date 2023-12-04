@@ -602,6 +602,40 @@ summary(cmCart)
 ```
 
 
+CART models should be able to handle multivariate factor levels for the target variable, however for whatever reason, the model never makes a prediction for the 'Injury' factor.
+
+
+```{r}
+cm_d <- as.data.frame(cmCart$table)
+all_levels <- unique(c(levels(cm_d$Prediction), levels(cm_d$Reference)))
+cm_d$Prediction <- factor(cm_d$Prediction, levels = all_levels)
+cm_d$Reference <- factor(cm_d$Reference, levels = all_levels)
+
+cm_d$diag <- cm_d$Prediction == cm_d$Reference
+cm_d$ndiag <- cm_d$Prediction != cm_d$Reference
+cm_d[cm_d == 0] <- NA
+cm_d$Reference <- factor(cm_d$Reference, levels = rev(levels(cm_d$Reference)))
+cm_d$ref_freq <- cm_d$Freq * ifelse(is.na(cm_d$diag), -1, 1)
+
+plt1 <- ggplot(data = cm_d, aes(x = Prediction, y = Reference, fill = Freq)) +
+  scale_x_discrete(position = "top") +
+  geom_tile(aes(fill = ref_freq)) +
+  scale_fill_gradient2(guide = FALSE, low = "red3", high = "orchid4", midpoint = 0, na.value = 'white') +
+  geom_text(aes(label = Freq), color = 'black', size = 3) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.position = "none",
+        panel.border = element_blank(),
+        plot.background = element_blank(),
+        axis.line = element_blank(),
+  )
+plt1
+```
+
+
+It's a shame because otherwise, it looks like it does a half decent job at correct True Positives for 'No injury' and 'Fatality'
+
+
 
 KNN (K-Nearest Neighbors):
 
