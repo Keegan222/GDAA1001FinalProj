@@ -654,10 +654,10 @@ The KNN model does a decent job at correctly predicting fatalities, however it s
 
 ```{r}
 cm_d <- as.data.frame(cmKnn$table)
-cm_d$diag <- cm_d$Prediction == cm_d$Reference # Get the Diagonal
-cm_d$ndiag <- cm_d$Prediction != cm_d$Reference # Off Diagonal     
-cm_d[cm_d == 0] <- NA # Replace 0 with NA for white tiles
-cm_d$Reference <-  reverse.levels(cm_d$Reference) # diagonal starts at top left
+cm_d$diag <- cm_d$Prediction == cm_d$Reference 
+cm_d$ndiag <- cm_d$Prediction != cm_d$Reference    
+cm_d[cm_d == 0] <- NA 
+cm_d$Reference <-  reverse.levels(cm_d$Reference) 
 cm_d$ref_freq <- cm_d$Freq * ifelse(is.na(cm_d$diag),-1,1)
 
 plt1 <-  ggplot(data = cm_d, aes(x = Prediction , y =  Reference, fill = Freq))+
@@ -689,6 +689,32 @@ cmSvm
 
 The SVM model will operate and produce a result, but also a lot of warnings. The data we have used includes a lot of variables that have factors that heavily outweigh the other factors ie. straight, level surfaces or dry, normal road surfaces. This means out data suffers from constant or "near-zero" variance, which the SVM and LDA models struggle with.
 
+```{r}
+cm_d <- as.data.frame(cmSvm$table)
+cm_d$diag <- cm_d$Prediction == cm_d$Reference 
+cm_d$ndiag <- cm_d$Prediction != cm_d$Reference    
+cm_d[cm_d == 0] <- NA 
+cm_d$Reference <-  reverse.levels(cm_d$Reference)
+cm_d$ref_freq <- cm_d$Freq * ifelse(is.na(cm_d$diag),-1,1)
+
+plt1 <-  ggplot(data = cm_d, aes(x = Prediction , y =  Reference, fill = Freq))+
+  scale_x_discrete(position = "top") +
+  geom_tile( data = cm_d,aes(fill = ref_freq)) +
+  scale_fill_gradient2(guide = FALSE ,low="red3",high="orchid4", midpoint = 0,na.value = 'white') +
+  geom_text(aes(label = Freq), color = 'black', size = 3)+
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.position = "none",
+        panel.border = element_blank(),
+        plot.background = element_blank(),
+        axis.line = element_blank(),
+  )
+plt1
+```
+
+
+A positive take-away from this model thus far is that there are noticeably smaller cases of false positives when the incident is a fatality but predicts no injury. Would be unfortunate for the model to say there's nothing to be concerned about when in fact someone is fatally injured on the scene.
+
 
 
 
@@ -701,7 +727,34 @@ fit.multinom <- multinom(InjurySeverity ~ ., data = training)
 predictions <- predict(fit.multinom, validation)
 
 
-cm4 <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
-cm4
+cmGlm <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cmGlm
 ```
+
+This model has our highest accuracy yet. The other noticeable positive note is the continuation of low false positives for predicting no ijury when fatality has occured.
+
+
+```{r}
+cm_d <- as.data.frame(cmGlm$table)
+cm_d$diag <- cm_d$Prediction == cm_d$Reference
+cm_d$ndiag <- cm_d$Prediction != cm_d$Reference 
+cm_d[cm_d == 0] <- NA 
+cm_d$Reference <-  reverse.levels(cm_d$Reference) 
+cm_d$ref_freq <- cm_d$Freq * ifelse(is.na(cm_d$diag),-1,1)
+
+plt1 <-  ggplot(data = cm_d, aes(x = Prediction , y =  Reference, fill = Freq))+
+  scale_x_discrete(position = "top") +
+  geom_tile( data = cm_d,aes(fill = ref_freq)) +
+  scale_fill_gradient2(guide = FALSE ,low="red3",high="orchid4", midpoint = 0,na.value = 'white') +
+  geom_text(aes(label = Freq), color = 'black', size = 3)+
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.position = "none",
+        panel.border = element_blank(),
+        plot.background = element_blank(),
+        axis.line = element_blank(),
+  )
+plt1
+```
+
 
