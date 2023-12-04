@@ -30,13 +30,13 @@ library(GGally)
 library(data.table)
 library(sf)
 library(ggspatial)
-library(tmap)
 library(grid)
 library(gridExtra)
 library(patchwork)
 library(nnet)
 library(caret)
 library(likert)
+library(tmap)
 ```
 
 ## Loading the dataset
