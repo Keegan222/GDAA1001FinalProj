@@ -677,7 +677,7 @@ plt1
 
 SVM (Support Vector Machine):
 
-```{r}
+```{r message=F}
 svmModel <- train(InjurySeverity~., data=training, method="svmRadial", metric=metric, trControl=control)
 predictions <- predict(svmModel, validation)
 
@@ -755,3 +755,78 @@ plt1 <-  ggplot(data = cm_d, aes(x = Prediction , y =  Reference, fill = Freq))+
 plt1
 ```
 
+
+
+
+Conclusion:
+
+Use a lollipop graph to show importance of our predictor variables. The graph included many levels of our categorical factor, mkaing it quite messy. To clean this up, we only included factors which had an importance of at least greater than zero.
+
+```{r}
+importance3 <- varImp(cartModel)
+imp3 <- importance3$importance
+
+p3 <- imp3 %>% 
+  mutate(Predictor = rownames(imp3)) %>% 
+  pivot_longer(names_to = "InjurySeverity", values_to = "Importance", -Predictor) %>%
+  filter(imp3>1)%>%
+  ggplot(aes(x=Predictor, y=Importance))+
+  geom_segment(aes(x=Predictor, xend=Predictor, y=0, yend=Importance), color="skyblue") +
+  geom_point(color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank())+
+  ylab("Classification & Regression Tree")+
+  xlab("")
+p3
+```
+
+
+This tell us some details about our predictors and which one stuck out significantly. With this knowledge about which variables are important in making predictions of our target variable, we can change the parameters of our model so attempt to increase the accuracy. 
+
+```{r}
+dataTrimmed <- data %>%
+  select(c(InjurySeverity,VehicleType,Vehicles,UserType,Traffic,RoadConfig,PersonSex,CollisionType))
+
+inTraining <- createDataPartition(dataTrimmed$InjurySeverity, p=0.75, list=FALSE)
+training <- dataTrimmed[inTraining,]
+validation <- dataTrimmed[-inTraining,]
+
+cartModelTrimmed <- train(InjurySeverity~., data=training, method="rpart", metric=metric, trControl=control,
+                   tuneGrid=data.frame(cp=0.01))
+predictions <- predict(cartModelTrimmed, validation)
+
+cmCartTrimmed <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
+cmCartTrimmed
+
+summary(cmCartTrimmed)
+```
+
+The accuracy of our trimmed data with application of the CART model is noticably higher by about 3% for this given example.
+
+```{r}
+importance3 <- varImp(cartModelTrimmed)
+imp3 <- importance3$importance
+
+p3 <- imp3 %>% 
+  mutate(Predictor = rownames(imp3)) %>% 
+  pivot_longer(names_to = "InjurySeverity", values_to = "Importance", -Predictor) %>%
+  filter(imp3>1)%>%
+  ggplot(aes(x=Predictor, y=Importance))+
+  geom_segment(aes(x=Predictor, xend=Predictor, y=0, yend=Importance), color="skyblue") +
+  geom_point(color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank())+
+  ylab("Classification & Regression Tree")+
+  xlab("")
+p3
+```
+
+After further trimming the data, we run the model again and observe similar important variables. The consistency tells us that the variables are performing as they should.
