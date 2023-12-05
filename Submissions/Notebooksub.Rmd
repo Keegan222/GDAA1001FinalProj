@@ -779,7 +779,7 @@ p3 <- imp3 %>%
     panel.grid.major.y = element_blank(),
     panel.border = element_blank(),
     axis.ticks.y = element_blank())+
-  ylab("Classification & Regression Tree")+
+  ylab("Classification & Regression Tree - Before trim")+
   xlab("")
 p3
 ```
@@ -824,7 +824,7 @@ p3 <- imp3 %>%
     panel.grid.major.y = element_blank(),
     panel.border = element_blank(),
     axis.ticks.y = element_blank())+
-  ylab("Classification & Regression Tree")+
+  ylab("Classification & Regression Tree - After trim")+
   xlab("")
 p3
 ```
