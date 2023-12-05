@@ -591,7 +591,8 @@ This model excels when the data consists of observations broken into groups. The
 
 
 ```{r}
-cartModel <- train(InjurySeverity~., data=training, method="rpart", metric=metric, trControl=control)
+cartModel <- train(InjurySeverity~., data=training, method="rpart", metric=metric, trControl=control,
+                   tuneGrid=data.frame(cp=0.01))
 predictions <- predict(cartModel, validation)
 
 cmCart <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
