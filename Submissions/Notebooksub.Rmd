@@ -559,6 +559,7 @@ data <- bind_rows(fatalSet,injurySet,noInjurySet, .id = NULL)
 A partition is created to create separate subsets of our data for the purpose of training and validating the models.
 75% of our set will be used to train the data, and the remaining 25% will be used to validate the models we choose.
 
+
 ```{r}
 inTraining <- createDataPartition(data$InjurySeverity, p=0.75, list=FALSE)
 training <- data[inTraining,]
@@ -566,7 +567,8 @@ validation <- data[-inTraining,]
 ```
 
 
-Two parameters will be needed for the models. One is the method in which the control data will be training the model. The method used is cross-validation. This method splits the dataset randomly into groups and runs a series of tests that store results used to measure the metric of interest. We will repeat this for 20 unique tests sets. The metric of interest is the accuracy of the model.
+Two parameters will be needed for the models. One is the method in which the control data will be training the model. The method used is cross-validation. This method splits the data set randomly into groups and runs a series of tests that store results used to measure the metric of interest. We will repeat this for 20 unique tests sets. The metric of interest is the accuracy of the model.
+
 
 ```{r}
 control <- trainControl(method="cv", number=20)
@@ -576,18 +578,11 @@ metric <- "Accuracy"
 
 Running the Models:
 
-LDA (Linear Discriminant Analysis):
-
-This model works well with categorical predictor variables, however requires some assumptions be met. If the predictors are not normally distributed, could cause problems.
-
-
-
-
 
 
 C&RT (Classification and Regression Trees):
 
-This model excels when the data consists of observations broken into groups. There are a lot of categorical variables with multiple levels of factors making this model an ideal choice at first glance.
+This decision tree algorithm excels when the data consists of observations broken into groups. There are a lot of categorical variables with multiple levels of factors making this model an ideal choice at first glance.
 
 
 ```{r}
@@ -602,7 +597,7 @@ summary(cmCart)
 ```
 
 
-CART models should be able to handle multivariate factor levels for the target variable, however for whatever reason, the model never makes a prediction for the 'Injury' factor.
+The extra "tunegrid" parameter was necessary to complete the model, otherwise it never predicts the "Injury" factor level.
 
 
 ```{r}
@@ -632,12 +627,14 @@ plt1 <- ggplot(data = cm_d, aes(x = Prediction, y = Reference, fill = Freq)) +
 plt1
 ```
 
+The accuracy of the model tends to fit around 55%. There is a strong purple color for the true positive of fatalities. It seems to have a more difficult time distinguishing between No ijury and Injury cases.
 
-It's a shame because otherwise, it looks like it does a half decent job at correct True Positives for 'No injury' and 'Fatality'
 
 
 
 KNN (K-Nearest Neighbors):
+
+The K-nearest neighbors model generally performs well with numeric data or categorical data that has ordinal properties for the values. The prediction decisions are implemented fomr learning distances from nearest values and creating relations based on distances.
 
 ```{r}
 knnModel <- train(InjurySeverity~., data=training, method="knn", metric=metric, trControl=control)
@@ -647,7 +644,7 @@ cmKnn <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
 cmKnn
 ```
 
-The KNN model does a decent job at correctly predicting fatalities, however it struggles a bit with the other two. This suggests that the information regarding fatalities is more meaningful and distinct from the other two factors.  
+First observation of the results show a decrease in accuracy from our CART model. The data contains very few numeric values and the categorical variables intend to give a description of the feature and do not have a logical ordering.
 
 
 ```{r}
@@ -673,9 +670,12 @@ plt1 <-  ggplot(data = cm_d, aes(x = Prediction , y =  Reference, fill = Freq))+
 plt1
 ```
 
+Of the 675 observations in our validation set, the model was only able to predict the outcome correctly 289 times. It noticeably predicts that the accident has no injury when there is in fact an injury incorrectly more than it does correctly. 
 
 
 SVM (Support Vector Machine):
+
+Support Vector Machine models are very powerful and can handle linear and non-linear data. It also handles both binary and multiclass classifications well, which may be helpful for our three-level factor target variable.
 
 ```{r message=F}
 svmModel <- train(InjurySeverity~., data=training, method="svmRadial", metric=metric, trControl=control)
@@ -711,7 +711,7 @@ plt1
 ```
 
 
-A positive take-away from this model thus far is that there are noticeably smaller cases of false positives when the incident is a fatality but predicts no injury. Would be unfortunate for the model to say there's nothing to be concerned about when in fact someone is fatally injured on the scene.
+A positive take-away from this model thus far is that there are noticeably smaller cases of false positives when the incident is a fatality but predicts no injury. Would be unfortunate for the model to say there's nothing to be concerned about when in fact someone is fatally injured on the scene. The accuracy however is still lower than our CART model. SVM's decision boundaries are made by creating hyperplanes that differentiate data into their classes. These hyperplanes can be sensitive to outliers, which are apparent in our variables that are dominantly outclassed by a single or few factor levels.
 
 
 
@@ -721,15 +721,15 @@ GLM (Generalized Linear Models):
 The traditional method="glm" technique for our model will result in errors, as this model assumes the target variable is of a binary classification. Since our InjurySeverity target variable has 3 factors, we will need to apply a multinomial logistic regression model. This will pull from the nnet package.
 
 ```{r}
-fit.multinom <- multinom(InjurySeverity ~ ., data = training)
-predictions <- predict(fit.multinom, validation)
+multiModel <- multinom(InjurySeverity ~ ., data = training)
+predictions <- predict(multiModel, validation)
 
 
 cmGlm <- confusionMatrix(predictions, as.factor(validation$InjurySeverity))
 cmGlm
 ```
 
-This model has our highest accuracy yet. The other noticeable positive note is the continuation of low false positives for predicting no ijury when fatality has occured.
+The results of this model appear similar to but slightly outperformed by the CART model. Two major notes from the summary statistics are that the sensitivity of No Injury and specificity of fatality are generally higher in the multinomial logistic regression. This is illustrated below with the dark purple in the respective corners.
 
 
 ```{r}
@@ -755,7 +755,7 @@ plt1 <-  ggplot(data = cm_d, aes(x = Prediction , y =  Reference, fill = Freq))+
 plt1
 ```
 
-
+If the purpose of our model was to correctly predict No injury or fatality, this design would thrive. Hypothetically, if special equipment was required for accidents involving fatalities, you could erase some of the uncertainty that exists when the true outcome is something other than Injury.
 
 
 Conclusion:
@@ -830,3 +830,37 @@ p3
 ```
 
 After further trimming the data, we run the model again and observe similar important variables. The consistency tells us that the variables are performing as they should.
+
+
+The models:
+
+```{r}
+results <- resamples(list(cart=cartModel, knn=knnModel, svm=svmModel))
+summary(results)
+
+results_df <- as.data.frame(results)
+
+results_tidy <- results_df %>% 
+  pivot_longer(names_to = "Model", values_to = "Accuracy", -Resample) %>% 
+  group_by(Resample, Model) %>%  # Include 'Resample' in grouping
+  summarise(Mean_Accuracy = mean(Accuracy))
+
+mean_acc <- results_df %>% 
+  pivot_longer(names_to = "Model", values_to = "Accuracy", -Resample) %>% 
+  ggplot(aes(x = fct_reorder(Model, -Accuracy), y = Accuracy)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  coord_flip() +
+  xlab("Model") +
+  ylab("Mean Accuracy") +
+  theme_minimal() +
+  theme(text = element_text(size = 12))
+
+mean_acc
+```
+
+The values of the x-axis are not very meaningful here, but the shape of the graph does display the level of performance of each model correctly. The CART outperforms most of the models with the exception of the multinomial logistic regression model not listed in this graph that also performs with around 55% accuracy.
+
+
+
+
+Our model is most important and somewhat accurate when predicting fatalities, Which it does a decent job at distinguishing between fatality and the other two factors injury and no injury.  It is more likely to predict a fatality and be incorrect than to predict something else when the actual outcome of the accident is a fatality. This implication could be practically useful when dispatching emergency responders. If the accident has potential to fatally injure a passenger, a swift and confident call to send out emergency responders can save a life. The difference between No injury and Injury is sometimes less obvious with our results. 
